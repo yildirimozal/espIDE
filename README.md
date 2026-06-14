@@ -15,6 +15,7 @@ Tarayıcıdan, **kurulum yapmadan** ESP32 programlamak için web tabanlı bir ID
 - 🗂 **Cihaz dosya sistemi** — flash'taki dosyaları gez, aç, düzenle, sil, çalıştır, "karta kaydet"
 - 🔄 **Yerel klasör senkronu** (File System Access API) — projeyi karta gönder / karttan al
 - 🖥 **Etkileşimli terminal** (xterm.js) — ANSI destekli canlı REPL, `input()` çalışır
+- 📈 **Canlı plotter** — akan çıktıdaki sayıları gerçek zamanlı çizer (çoklu seri; `temp:23.5 hum:40` veya CSV/boşluk), zaman damgalı **CSV export**
 - 🎛 **Donanım kontrolü** — Reset, yapılandırılabilir baud, otomatik kopma algılama
 - 🎨 Python söz dizimi renklendirmeli editör (CodeMirror)
 - 🧠 **Akıllı pinout** — kartı tanır, çip ailesine göre doğru pin diyagramını gösterir

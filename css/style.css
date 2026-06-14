@@ -187,6 +187,16 @@ ul.tree ul.tree { padding-left: 14px; border-left: 1px dotted var(--line); margi
 .output .sys { color: var(--accent); }
 .output .err { color: var(--red); }
 
+/* Plotter */
+#plotter { position: absolute; inset: 0; display: none; flex-direction: column; background: #010409; }
+#plotter.active { display: flex; }
+.plot-bar { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.plot-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; font-family: "SF Mono", Menlo, monospace; }
+.plot-legend .ls { display: inline-flex; align-items: center; gap: 4px; color: var(--fg); }
+.plot-legend .ls i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.plot-legend .ls b { color: var(--accent); }
+.plot-canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+
 @media (max-width: 800px) {
   main { flex-direction: column; }
   .sidebar { width: 100%; max-height: 45%; border-right: 0; border-bottom: 1px solid var(--line); }

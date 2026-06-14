@@ -6,10 +6,11 @@ import { renderPinout } from './pinout.js';
 import { initEditor } from './editor.js';
 import { initTerminal } from './terminal.js';
 import { DeviceFiles, pickLocalFolder, pushToDevice, pullFromDevice } from './files.js';
+import { Plotter } from './plotter.js';
 
 const $ = (id) => document.getElementById(id);
 const repl = new SerialREPL();
-let cm, term, dfiles, currentChip = 'ESP32';
+let cm, term, dfiles, plotter, currentChip = 'ESP32';
 let curFile = null;            // editordeki dosyanin cihaz yolu
 let folderHandle = null;       // yerel senkron klasoru
 
@@ -34,7 +35,9 @@ function bottomTab(name) {
   document.querySelectorAll('.tab[data-bottom]').forEach((b) => b.classList.toggle('active', b.dataset.bottom === name));
   $('terminal').classList.toggle('active', name === 'terminal');
   $('output').classList.toggle('active', name === 'output');
+  $('plotter').classList.toggle('active', name === 'plotter');
   if (name === 'terminal' && term) term.fit();
+  if (name === 'plotter' && plotter) plotter.resize();
 }
 
 // --- Baglan ---
@@ -124,13 +127,15 @@ async function runSelected() {
 // --- Calistir ---
 async function runCode(code) {
   if (!repl.connected) return;
-  bottomTab('output'); setStatus('çalışıyor…', 'busy');
+  if (!$('plotter').classList.contains('active')) bottomTab('output');
+  setStatus('çalışıyor…', 'busy');
   out('\n▶ ' + new Date().toLocaleTimeString() + '\n', 'sys');
   try {
-    const { stdout, stderr } = await repl.run(code, 120000);
-    if (stdout) out(stdout); if (stderr) out(stderr, 'err');
-    out('✓ bitti\n', 'sys'); setStatus('bağlı · ' + currentChip, 'ok');
-  } catch (e) { out('Hata: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
+    const onChunk = (t) => { out(t); if (plotter) plotter.feed(t); };
+    const { stderr } = await repl.run(code, 60000, onChunk); // 60 sn sessizlik = timeout
+    if (stderr && !stderr.includes('KeyboardInterrupt')) out(stderr, 'err');
+    out('\n✓ bitti\n', 'sys'); setStatus('bağlı · ' + currentChip, 'ok');
+  } catch (e) { out('\nHata: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
 }
 const run = () => runCode(cm.getValue());
 async function stop() { await repl.interrupt(); out('\n⏹ Ctrl-C\n', 'sys'); }
@@ -177,6 +182,7 @@ function init() {
   try { term = initTerminal($('terminal'), repl); }
   catch (e) { console.error('Terminal yüklenemedi:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">Terminal yüklenemedi (xterm.js). Çıktı sekmesini kullan.</div>'; }
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
+  plotter = new Plotter($('plot-canvas'), $('plot-legend'));
 
   const exSel = $('examples');
   Object.keys(ORNEKLER).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = k; exSel.appendChild(o); });
@@ -198,6 +204,8 @@ function init() {
   $('f-refresh').onclick = refreshFiles; $('f-new').onclick = newFile; $('f-del').onclick = delSelected;
   $('f-run').onclick = runSelected; $('f-open').onclick = () => dfiles.selected && openFile(dfiles.selected);
   $('s-pick').onclick = pickFolder; $('s-push').onclick = pushFolder; $('s-pull').onclick = pullFolder;
+  $('plot-clear').onclick = () => plotter.clear();
+  $('plot-csv').onclick = () => plotter.downloadCSV();
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);

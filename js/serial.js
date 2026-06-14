@@ -127,23 +127,47 @@ export class SerialREPL {
   }
 
   // stdout/stderr cercevesi: <stdout>\x04<stderr>\x04
-  async _follow(timeoutMs) {
-    const o = await this._waitFor('\x04', timeoutMs);
+  // onChunk verilirse stdout CANLI akar (idle-timeout ile uzun donguler desteklenir).
+  async _follow(timeoutMs, onChunk) {
+    let stdout;
+    if (onChunk) stdout = await this._readUntilEmit(0x04, timeoutMs, onChunk);
+    else { const o = await this._waitFor('\x04', timeoutMs); stdout = dec.decode(o.slice(0, -1)); }
     const e = await this._waitFor('\x04', 4000);
-    return { stdout: dec.decode(o.slice(0, -1)), stderr: dec.decode(e.slice(0, -1)) };
+    return { stdout, stderr: dec.decode(e.slice(0, -1)) };
+  }
+
+  // \x04 gelene kadar oku; her yeni veriyi onChunk'a aktar. idleMs sessizlik sonrasi timeout.
+  async _readUntilEmit(tokByte, idleMs, onChunk) {
+    let collected = '';
+    let deadline = Date.now() + idleMs;
+    while (true) {
+      if (Date.now() > deadline) throw new Error('Akış zaman aşımı (' + (idleMs / 1000) + ' sn sessizlik)');
+      let i = -1;
+      for (let k = 0; k < this._buf.length; k++) if (this._buf[k] === tokByte) { i = k; break; }
+      if (i !== -1) {
+        const c = this._buf.slice(0, i); this._buf = this._buf.slice(i + 1);
+        if (c.length) { const t = dec.decode(c); collected += t; onChunk(t); }
+        return collected;
+      }
+      if (this._buf.length) {
+        const t = dec.decode(this._buf); this._buf = new Uint8Array(0);
+        collected += t; onChunk(t); deadline = Date.now() + idleMs;
+      }
+      await sleep(12);
+    }
   }
 
   // Normal raw exec (yedek yol)
-  async _execNormal(code, timeoutMs) {
+  async _execNormal(code, timeoutMs, onChunk) {
     this._flush();
-    await this._write(typeof code === 'string' ? code : code);
+    await this._write(code);
     await this._write('\x04');
     await this._waitFor('OK', 4000);
-    return this._follow(timeoutMs);
+    return this._follow(timeoutMs, onChunk);
   }
 
   // Raw-paste exec (hizli, akis kontrollu) — desteklenmezse normal'e duser
-  async _execRawPaste(codeBytes, timeoutMs) {
+  async _execRawPaste(codeBytes, timeoutMs, onChunk) {
     this._flush();
     await this._write(new Uint8Array([0x05, 0x41, 0x01])); // \x05 A \x01
     const resp = await this._readN(2);
@@ -151,7 +175,7 @@ export class SerialREPL {
       // R\x00 (desteksiz) veya beklenmedik -> normal yola dus
       this.useRawPaste = false;
       // R\x00 ise cihaz raw moddadir; normal exec ile devam
-      return this._execNormal(codeBytes, timeoutMs);
+      return this._execNormal(codeBytes, timeoutMs, onChunk);
     }
     const win = await this._readN(2);
     const window = win[0] | (win[1] << 8);
@@ -169,17 +193,17 @@ export class SerialREPL {
     }
     await this._write('\x04');         // veri sonu
     await this._waitFor('\x04', 4000); // device ack
-    return this._follow(timeoutMs);
+    return this._follow(timeoutMs, onChunk);
   }
 
   // Ana exec: raw REPL'e gir, raw-paste ile gonder, ciktiyi dondur.
-  // Cagrilar siraya sokulur (eszamanli raw protokol bozulmasin).
-  async exec(code, timeoutMs = 30000) {
+  // onChunk verilirse stdout canli akar. Cagrilar siraya sokulur.
+  async exec(code, timeoutMs = 30000, onChunk = null) {
     const bytes = typeof code === 'string' ? enc.encode(code) : code;
     const op = async () => {
       await this.enterRaw();
       try {
-        return this.useRawPaste ? await this._execRawPaste(bytes, timeoutMs) : await this._execNormal(bytes, timeoutMs);
+        return this.useRawPaste ? await this._execRawPaste(bytes, timeoutMs, onChunk) : await this._execNormal(bytes, timeoutMs, onChunk);
       } finally {
         await this.exitRaw(); // friendly REPL'e don -> terminal kullanilabilir kalir
       }
@@ -189,8 +213,8 @@ export class SerialREPL {
     return p;
   }
 
-  // Kullanici kodunu calistir
-  async run(code, timeoutMs = 60000) { return this.exec(code, timeoutMs); }
+  // Kullanici kodunu calistir (onChunk ile canli akis)
+  async run(code, timeoutMs = 60000, onChunk = null) { return this.exec(code, timeoutMs, onChunk); }
 
   // Python ifadesini calistirip stdout (trim) dondur
   async evalPy(code, timeoutMs = 8000) {

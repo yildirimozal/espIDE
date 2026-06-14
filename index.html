@@ -93,10 +93,20 @@
         <div class="tabs sm">
           <button class="tab active" data-bottom="terminal">Terminal</button>
           <button class="tab" data-bottom="output">Çıktı</button>
+          <button class="tab" data-bottom="plotter">Plotter 📈</button>
         </div>
         <div class="panel-body">
           <div id="terminal" class="terminal active"></div>
           <pre id="output" class="output"></pre>
+          <div id="plotter" class="plotter">
+            <div class="plot-bar">
+              <span id="plot-legend" class="plot-legend"></span>
+              <span class="spacer"></span>
+              <button id="plot-clear" class="btn xs ghost">🧹 Temizle</button>
+              <button id="plot-csv" class="btn xs ghost">⭳ CSV indir</button>
+            </div>
+            <canvas id="plot-canvas" class="plot-canvas"></canvas>
+          </div>
         </div>
       </div>
     </section>
