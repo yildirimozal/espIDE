@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESP32 Web IDE</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- CodeMirror (CDN) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="logo">⚡ ESP32 <span>Web IDE</span></div>
+    <div class="status"><span id="status-dot" class="dot"></span><span id="status-text">yükleniyor…</span></div>
+    <div class="spacer"></div>
+    <button id="btn-flash" class="btn ghost" title="Boş karta MicroPython yükle">⚙️ Firmware Yükle</button>
+    <button id="btn-connect" class="btn primary">🔌 Bağlan</button>
+    <button id="btn-disconnect" class="btn ghost hidden">⏏︎ Bağlantıyı Kes</button>
+  </header>
+
+  <div id="flash-progress" class="flash-progress hidden">
+    <div id="flash-bar" class="flash-bar"></div>
+  </div>
+
+  <main>
+    <!-- SOL: Kart bilgisi + pinout -->
+    <aside class="sidebar">
+      <h3>Kart Bilgisi</h3>
+      <div id="info" class="info-panel"><div class="muted">Bağlanınca kart bilgileri burada görünür.</div></div>
+
+      <h3>Pin Düzeni
+        <select id="board-select" class="mini-select" title="Pin şablonu"></select>
+      </h3>
+      <div id="pinout" class="pinout"></div>
+      <p class="legend">
+        <span class="lg io">GPIO</span>
+        <span class="lg power">Güç</span>
+        <span class="lg gnd">GND</span>
+        <span class="lg inputonly">Giriş</span>
+        <span class="lg flash">Flash</span>
+      </p>
+      <p class="muted small">GPIO pinine tıkla → simülasyon (ileride gerçek pin durumuna bağlanacak).</p>
+    </aside>
+
+    <!-- SAG: Editor + cikti -->
+    <section class="workspace">
+      <div class="toolbar">
+        <button id="btn-run" class="btn run" disabled>▶ Çalıştır <kbd>Ctrl+↵</kbd></button>
+        <button id="btn-stop" class="btn ghost" disabled>⏹ Durdur</button>
+        <select id="examples" class="select">
+          <option value="">📋 Örnekler…</option>
+        </select>
+        <div class="spacer"></div>
+        <button id="btn-clear" class="btn ghost">🧹 Çıktıyı Temizle</button>
+      </div>
+      <div id="editor" class="editor"></div>
+      <div class="output-head">Çıktı</div>
+      <pre id="output" class="output"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
