@@ -10,12 +10,18 @@ Tarayıcıdan, **kurulum yapmadan** ESP32 programlamak için web tabanlı bir ID
 ## ✨ Özellikler
 - 🔌 **Web Serial** ile USB üzerinden doğrudan bağlantı (kurulum gerektirmez)
 - ⚙️ **Tarayıcıdan firmware yükleme** — boş kart bile tek tuşla MicroPython'a kavuşur
-- 🐍 **MicroPython** — canlı çalıştırma, satır satır değil, tüm program tek tuşla
+- 🐍 **MicroPython** — canlı çalıştırma, tüm program tek tuşla
+- ⚡ **Raw-paste protokolü** — büyük dosyaları akış kontrollü, hızlı transfer
+- 🗂 **Cihaz dosya sistemi** — flash'taki dosyaları gez, aç, düzenle, sil, çalıştır, "karta kaydet"
+- 🔄 **Yerel klasör senkronu** (File System Access API) — projeyi karta gönder / karttan al
+- 🖥 **Etkileşimli terminal** (xterm.js) — ANSI destekli canlı REPL, `input()` çalışır
+- 🎛 **Donanım kontrolü** — Reset, yapılandırılabilir baud, otomatik kopma algılama
 - 🎨 Python söz dizimi renklendirmeli editör (CodeMirror)
-- 📋 Hazır örnek kodlar
 - 🧠 **Akıllı pinout** — kartı tanır, çip ailesine göre doğru pin diyagramını gösterir
-- 📊 Kart bilgisi paneli (çip, frekans, flash, RAM, kimlik)
-- 🟢 Tıklanabilir pinler (simülasyon — ileride gerçek pin durumuna bağlanacak)
+- 📊 Kart bilgisi paneli (çip, frekans, flash, RAM, kimlik) + flash kullanımı
+
+> Profesyonel iş akışı: dosyaları cihazda yönet, yerel klasörle senkronla, raw-paste ile
+> hızlı yükle, terminalde canlı REPL. **File System Access API** Chrome/Edge gerektirir.
 
 ---
 

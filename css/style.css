@@ -141,6 +141,52 @@ main { flex: 1; display: flex; min-height: 0; }
 .output .sys { color: var(--accent); }
 .output .err { color: var(--red); }
 
+/* ---- Pro v2 bilesenleri ---- */
+.inline { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.btn.xs { padding: 4px 8px; font-size: 12px; border-radius: 5px; font-weight: 600; }
+h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 16px 0 6px; }
+
+/* Sekmeler */
+.tabs { display: flex; gap: 2px; background: var(--bg2); border-bottom: 1px solid var(--line); }
+.tab { background: transparent; border: 0; color: var(--muted); padding: 8px 14px; cursor: pointer;
+  font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent; }
+.tab:hover { color: var(--fg); }
+.tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+.tabs.sm .tab { padding: 6px 12px; font-size: 12px; }
+.tabpane { display: none; }
+.tabpane.active { display: block; }
+.sidebar { padding: 0; }
+.sidebar .tabpane { padding: 12px 14px; }
+.sidebar .tabs { position: sticky; top: 0; z-index: 2; }
+
+/* Dosya agaci */
+.file-actions { display: flex; gap: 4px; margin: 4px 0 8px; }
+.file-actions.wrap { flex-wrap: wrap; }
+.tree-wrap { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px; max-height: 40vh; overflow: auto; }
+ul.tree { list-style: none; margin: 0; padding-left: 0; }
+ul.tree ul.tree { padding-left: 14px; border-left: 1px dotted var(--line); margin-left: 6px; }
+.node { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+.node:hover { background: var(--bg3); }
+.node.sel { background: #143d2a; outline: 1px solid var(--accent); }
+.node .ic { width: 16px; text-align: center; flex: 0 0 auto; }
+.node .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node .sz { color: var(--muted); font-size: 11px; }
+.df { margin-top: 6px; }
+.err { color: var(--red); }
+
+/* Calisma alani alt panel */
+.filename { font-size: 12px; color: var(--muted); font-family: "SF Mono", Menlo, monospace; }
+.panel { height: 40%; min-height: 150px; flex: 0 0 auto; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.panel .tabs.sm { flex: 0 0 auto; }
+.panel-body { flex: 1; min-height: 0; position: relative; background: #010409; }
+#terminal, #output { position: absolute; inset: 0; display: none; margin: 0; }
+#terminal.active { display: block; padding: 4px 6px; }
+#terminal .xterm { height: 100%; }
+#output.active { display: block; overflow: auto; padding: 10px 12px;
+  font-family: "SF Mono", Menlo, monospace; font-size: 13px; white-space: pre-wrap; color: #adbac7; }
+.output .sys { color: var(--accent); }
+.output .err { color: var(--red); }
+
 @media (max-width: 800px) {
   main { flex-direction: column; }
   .sidebar { width: 100%; max-height: 45%; border-right: 0; border-bottom: 1px solid var(--line); }

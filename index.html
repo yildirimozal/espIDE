@@ -3,63 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ESP32 Web IDE</title>
+  <title>ESP32 Web IDE — Pro</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- CodeMirror (CDN) -->
+  <!-- CodeMirror -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <!-- xterm.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 </head>
 <body>
   <header>
     <div class="logo">⚡ ESP32 <span>Web IDE</span></div>
-    <div class="status"><span id="status-dot" class="dot"></span><span id="status-text">yükleniyor…</span></div>
+    <div class="status"><span id="status-dot" class="dot"></span><span id="status-text">…</span></div>
     <div class="spacer"></div>
-    <button id="btn-flash" class="btn ghost" title="Boş karta MicroPython yükle">⚙️ Firmware Yükle</button>
-    <button id="btn-connect" class="btn primary">🔌 Bağlan</button>
-    <button id="btn-disconnect" class="btn ghost hidden">⏏︎ Bağlantıyı Kes</button>
+    <label class="inline">baud
+      <select id="baud" class="mini-select">
+        <option>115200</option><option>9600</option><option>230400</option><option>460800</option><option>921600</option>
+      </select>
+    </label>
+    <button id="btn-reset" class="btn ghost" title="Kartı resetle (RTS)">⟲ Reset</button>
+    <button id="btn-flash" class="btn ghost" title="Firmware yükle">⚙︎ Firmware</button>
+    <button id="btn-connect" class="btn primary">Bağlan</button>
+    <button id="btn-disconnect" class="btn ghost hidden">Kes</button>
   </header>
 
-  <div id="flash-progress" class="flash-progress hidden">
-    <div id="flash-bar" class="flash-bar"></div>
-  </div>
+  <div id="flash-progress" class="flash-progress hidden"><div id="flash-bar" class="flash-bar"></div></div>
 
   <main>
-    <!-- SOL: Kart bilgisi + pinout -->
+    <!-- SOL PANEL: sekmeli -->
     <aside class="sidebar">
-      <h3>Kart Bilgisi</h3>
-      <div id="info" class="info-panel"><div class="muted">Bağlanınca kart bilgileri burada görünür.</div></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="files">Dosyalar</button>
+        <button class="tab" data-tab="board">Kart</button>
+      </div>
 
-      <h3>Pin Düzeni
-        <select id="board-select" class="mini-select" title="Pin şablonu"></select>
-      </h3>
-      <div id="pinout" class="pinout"></div>
-      <p class="legend">
-        <span class="lg io">GPIO</span>
-        <span class="lg power">Güç</span>
-        <span class="lg gnd">GND</span>
-        <span class="lg inputonly">Giriş</span>
-        <span class="lg flash">Flash</span>
-      </p>
-      <p class="muted small">GPIO pinine tıkla → simülasyon (ileride gerçek pin durumuna bağlanacak).</p>
+      <!-- Dosyalar sekmesi -->
+      <div class="tabpane active" id="pane-files">
+        <div class="file-actions">
+          <button id="f-refresh" class="btn xs ghost" title="Yenile">⟳</button>
+          <button id="f-new" class="btn xs ghost" title="Yeni dosya">＋</button>
+          <button id="f-del" class="btn xs ghost" title="Sil">🗑</button>
+          <button id="f-run" class="btn xs ghost" title="Seçili dosyayı çalıştır">▶</button>
+          <button id="f-open" class="btn xs ghost" title="Seçili dosyayı editöre aç">✎</button>
+        </div>
+        <div id="tree" class="tree-wrap"><div class="muted small">Bağlanınca cihaz dosyaları listelenir.</div></div>
+        <div id="df" class="df muted small"></div>
+
+        <h4>Yerel klasör senkronu</h4>
+        <div class="file-actions wrap">
+          <button id="s-pick" class="btn xs ghost">📂 Klasör seç</button>
+          <button id="s-push" class="btn xs ghost" disabled>→ Karta gönder</button>
+          <button id="s-pull" class="btn xs ghost" disabled>← Karttan al</button>
+        </div>
+        <div id="s-folder" class="muted small">klasör seçilmedi</div>
+      </div>
+
+      <!-- Kart sekmesi -->
+      <div class="tabpane" id="pane-board">
+        <h4>Kart Bilgisi</h4>
+        <div id="info" class="info-panel"><div class="muted small">Bağlanınca görünür.</div></div>
+        <h4>Pin Düzeni <select id="board-select" class="mini-select"></select></h4>
+        <div id="pinout" class="pinout"></div>
+        <p class="legend">
+          <span class="lg io">GPIO</span><span class="lg power">Güç</span>
+          <span class="lg gnd">GND</span><span class="lg inputonly">Giriş</span><span class="lg flash">Flash</span>
+        </p>
+      </div>
     </aside>
 
-    <!-- SAG: Editor + cikti -->
+    <!-- SAG: editor + alt panel -->
     <section class="workspace">
       <div class="toolbar">
-        <button id="btn-run" class="btn run" disabled>▶ Çalıştır <kbd>Ctrl+↵</kbd></button>
-        <button id="btn-stop" class="btn ghost" disabled>⏹ Durdur</button>
-        <select id="examples" class="select">
-          <option value="">📋 Örnekler…</option>
-        </select>
+        <button id="btn-run" class="btn run" disabled>▶ Çalıştır <kbd>⌃↵</kbd></button>
+        <button id="btn-stop" class="btn ghost" disabled>⏹</button>
+        <span class="filename" id="cur-file">untitled.py</span>
+        <button id="btn-save" class="btn ghost" disabled title="Editörü karta kaydet">💾 Karta kaydet</button>
+        <select id="examples" class="select"><option value="">Örnekler…</option></select>
         <div class="spacer"></div>
-        <button id="btn-clear" class="btn ghost">🧹 Çıktıyı Temizle</button>
+        <button id="btn-clear" class="btn ghost">🧹</button>
       </div>
       <div id="editor" class="editor"></div>
-      <div class="output-head">Çıktı</div>
-      <pre id="output" class="output"></pre>
+
+      <div class="panel">
+        <div class="tabs sm">
+          <button class="tab active" data-bottom="terminal">Terminal</button>
+          <button class="tab" data-bottom="output">Çıktı</button>
+        </div>
+        <div class="panel-body">
+          <div id="terminal" class="terminal active"></div>
+          <pre id="output" class="output"></pre>
+        </div>
+      </div>
     </section>
   </main>
 
