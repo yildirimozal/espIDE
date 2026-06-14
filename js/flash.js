@@ -1,7 +1,8 @@
 // flash.js — Bos karta tarayicidan MicroPython yukler (esptool-js).
 // Cipi otomatik tespit eder, dogru firmware'i ve offset'i secer.
 
-const ESPTOOL_URL = 'https://unpkg.com/esptool-js@0.4.5/bundle.js';
+// Vendored (CDN yok) — flash.js js/ altinda oldugu icin bir ust dizinden cozulur
+const ESPTOOL_URL = '../vendor/esptool-js/bundle.js';
 
 // Cip ailesine gore firmware ve flash offset'i
 // (ESP32 ve S2 -> 0x1000, S3/C3/C6 -> 0x0)

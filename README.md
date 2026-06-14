@@ -20,6 +20,8 @@ Tarayıcıdan, **kurulum yapmadan** ESP32 programlamak için web tabanlı bir ID
 - 🎨 Python söz dizimi renklendirmeli editör (CodeMirror)
 - 🧠 **Akıllı pinout** — kartı tanır, çip ailesine göre doğru pin diyagramını gösterir
 - 📊 Kart bilgisi paneli (çip, frekans, flash, RAM, kimlik) + flash kullanımı
+- 📲 **PWA** — kurulabilir, **tamamen çevrimdışı** çalışır (firmware dahil önbellekte)
+- 🔌 **Vendored bağımlılıklar** — CDN yok; izole/kurumsal ağlarda çalışır
 
 > Profesyonel iş akışı: dosyaları cihazda yönet, yerel klasörle senkronla, raw-paste ile
 > hızlı yükle, terminalde canlı REPL. **File System Access API** Chrome/Edge gerektirir.
@@ -69,6 +71,13 @@ açılır menüden elle de değiştirebilirsin.
 3. `js/boards.js` içine yeni bir pinout şablonu ekle (mevcutları örnek al).
 
 ---
+
+## 📲 PWA / Çevrimdışı / Güncelleme
+- Site ilk açıldığında **service worker** tüm uygulamayı + firmware'leri önbelleğe alır → sonrasında **internetsiz** çalışır (kurumsal/izole ağlar için ideal).
+- Tarayıcıdan **"Uygulamayı yükle"** ile masaüstü/dock uygulaması gibi kurulabilir.
+- Tüm bağımlılıklar `vendor/` altında **yerel** (CDN yok).
+- **Güncelleme yayınlarken:** `sw.js` içindeki `APP_VERSION`'ı artır (ör. `v1.0.1`). Eski önbellek
+  silinir, yeni varlıklar çekilir; kullanıcılar bir sonraki açılışta güncel sürümü alır.
 
 ## 🌐 Tarayıcı gereksinimi
 Web Serial API gerektirir: **Chrome, Edge, Opera** (masaüstü). Safari ve Firefox desteklemez.
