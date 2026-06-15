@@ -53,7 +53,7 @@ async function connect() {
   try {
     setStatus(t('st_selecting'), 'busy');
     await repl.requestPort();
-    repl.onDisconnect = () => { setConnectedUI(false); setStatus(t('st_dropped'), 'err'); out(t('msg_dropped'), 'err'); };
+    repl.onDisconnect = () => { if (wireless) wireless.stop(); setConnectedUI(false); setStatus(t('st_dropped'), 'err'); out(t('msg_dropped'), 'err'); };
     await repl.open(parseInt($('baud').value, 10));
     setConnectedUI(true);
     out(t('msg_connected'), 'sys');
@@ -216,7 +216,7 @@ function init() {
   catch (e) { console.error('Terminal:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">xterm.js?</div>'; }
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
-  wireless = new Wireless(repl, { results: $('wl-results') });
+  wireless = new Wireless(repl, { results: $('wl-results'), auto: $('wl-auto') });
 
   applyI18n();
   $('lang').value = getLang();
