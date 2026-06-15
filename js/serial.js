@@ -35,6 +35,7 @@ export class SerialREPL {
     this.reader = null;
     this.writer = null;
     this.connected = false;
+    this._lost = false;         // baglanti beklenmedik koptu mu (bekleyen op'lari hemen iptal et)
     this.baud = 115200;
     this._buf = new Uint8Array(0);
     this._pump = null;
@@ -54,6 +55,7 @@ export class SerialREPL {
     this.writer = this.port.writable.getWriter();
     this.reader = this.port.readable.getReader();
     this.connected = true;
+    this._lost = false;
     this._buf = new Uint8Array(0);
     this._pump = this._readLoop();
   }
@@ -70,7 +72,12 @@ export class SerialREPL {
         }
       }
     } catch (e) { /* iptal/kopma */ }
-    if (this.connected && this.onDisconnect) { this.connected = false; this.onDisconnect(); }
+    if (this.connected) {
+      // Beklenmedik kopma: bekleyen protokol cagrilarini hemen iptal et.
+      this.connected = false;
+      this._lost = true;
+      if (this.onDisconnect) this.onDisconnect();
+    }
   }
 
   async close() {
@@ -89,6 +96,7 @@ export class SerialREPL {
     const tok = enc.encode(token);
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
+      if (this._lost) throw new Error('Baglanti koptu');
       const idx = indexOf(this._buf, tok);
       if (idx !== -1) { const r = this._buf.slice(0, idx + tok.length); this._buf = this._buf.slice(idx + tok.length); return r; }
       await sleep(6);
@@ -99,6 +107,7 @@ export class SerialREPL {
   async _readN(n, timeoutMs = 5000) {
     const deadline = Date.now() + timeoutMs;
     while (this._buf.length < n) {
+      if (this._lost) throw new Error('Baglanti koptu');
       if (Date.now() > deadline) throw new Error('Zaman asimi (' + n + ' byte beklendi)');
       await sleep(4);
     }
@@ -141,6 +150,7 @@ export class SerialREPL {
     let collected = '';
     let deadline = Date.now() + idleMs;
     while (true) {
+      if (this._lost) throw new Error('Baglanti koptu');
       if (Date.now() > deadline) throw new Error('Akış zaman aşımı (' + (idleMs / 1000) + ' sn sessizlik)');
       let i = -1;
       for (let k = 0; k < this._buf.length; k++) if (this._buf[k] === tokByte) { i = k; break; }
