@@ -47,35 +47,40 @@ export async function flashFirmware(port, { onLog = () => {}, onProgress = () =>
   const transport = new Transport(port, false);
   const esploader = new ESPLoader({ transport, baudrate: 460800, terminal });
 
-  onLog('Karta baglaniliyor (bootloader)...\n');
-  const chipDesc = await esploader.main();          // cipe baglanir, aciklama dondurur
-  const chip = normalizeChip(chipDesc);
-  onLog('Tespit edilen cip: ' + chipDesc + ' -> ' + chip + '\n');
+  // try/finally: hata (USB kopmasi, brown-out, esptool timeout) olsa bile
+  // transport.disconnect() her yolda calisir -> port acik/kilitli kalmaz,
+  // REPL sayfa yenilemeden geri alabilir.
+  try {
+    onLog('Karta baglaniliyor (bootloader)...\n');
+    const chipDesc = await esploader.main();          // cipe baglanir, aciklama dondurur
+    const chip = normalizeChip(chipDesc);
+    onLog('Tespit edilen cip: ' + chipDesc + ' -> ' + chip + '\n');
 
-  const fw = FIRMWARE[chip];
-  if (!fw) {
+    const fw = FIRMWARE[chip];
+    if (!fw) {
+      throw new Error('Bu cip icin pakette firmware yok: ' + chip +
+        '. firmware/ klasorune uygun .bin ekleyip flash.js icindeki FIRMWARE listesini guncelle.');
+    }
+
+    onLog('Firmware indiriliyor: ' + fw.file + '\n');
+    const data = await fetchBinaryString(fw.file);
+
+    onLog('Flash yaziliyor (0x' + fw.offset.toString(16) + ')... bu ~30 sn surebilir.\n');
+    await esploader.writeFlash({
+      fileArray: [{ data, address: fw.offset }],
+      flashSize: 'keep',
+      eraseAll: true,
+      compress: true,
+      reportProgress: (idx, written, total) => onProgress(written / total),
+    });
+
+    onLog('\nYazma tamam. Kart resetleniyor...\n');
     await safeReset(esploader, transport);
-    throw new Error('Bu cip icin pakette firmware yok: ' + chip +
-      '. firmware/ klasorune uygun .bin ekleyip flash.js icindeki FIRMWARE listesini guncelle.');
+    onProgress(1);
+    return { chip, chipDesc, firmware: fw };
+  } finally {
+    try { await transport.disconnect(); } catch (e) {}   // portu serbest birak (REPL alabilsin)
   }
-
-  onLog('Firmware indiriliyor: ' + fw.file + '\n');
-  const data = await fetchBinaryString(fw.file);
-
-  onLog('Flash yaziliyor (0x' + fw.offset.toString(16) + ')... bu ~30 sn surebilir.\n');
-  await esploader.writeFlash({
-    fileArray: [{ data, address: fw.offset }],
-    flashSize: 'keep',
-    eraseAll: true,
-    compress: true,
-    reportProgress: (idx, written, total) => onProgress(written / total),
-  });
-
-  onLog('\nYazma tamam. Kart resetleniyor...\n');
-  await safeReset(esploader, transport);
-  await transport.disconnect();           // portu serbest birak (REPL alabilsin)
-  onProgress(1);
-  return { chip, chipDesc, firmware: fw };
 }
 
 async function safeReset(esploader, transport) {
