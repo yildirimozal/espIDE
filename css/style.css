@@ -242,9 +242,10 @@ ul.tree ul.tree { padding-left: 14px; border-left: 1px dotted var(--line); margi
 .room-bar { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
 .room-badge { font-weight: 700; font-size: 14px; padding: 3px 12px; border: 1.5px solid var(--gnd); border-radius: 14px; color: var(--muted); }
 .room-body { flex: 1; min-height: 0; display: flex; gap: 8px; padding: 8px; }
-.room-canvas { flex: 1; min-width: 0; height: 100%; display: block; background: #0d1117; border: 1px solid var(--line); border-radius: 8px; }
-.room-side { width: 240px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
-.room-mini { flex: 1; width: 100%; min-height: 0; display: block; background: #0d1117; border: 1px solid var(--line); border-radius: 8px; }
+.room-canvas-wrap { flex: 1; min-width: 0; position: relative; background: #0d1117; border: 1px solid var(--line); border-radius: 8px; }
+.room-side { width: 240px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.room-mini-wrap { flex: 1; min-height: 0; position: relative; background: #0d1117; border: 1px solid var(--line); border-radius: 8px; }
+.room-canvas, .room-mini { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .room-note { padding: 5px 10px; flex: 0 0 auto; border-top: 1px solid var(--line); }
 
 @media (max-width: 800px) {

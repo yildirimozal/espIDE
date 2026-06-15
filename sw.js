@@ -1,6 +1,6 @@
 // sw.js — Service Worker: cevrimdisi destek + cache-busting.
 // GUNCELLEME YAYINLARKEN: APP_VERSION'i artir -> eski cache silinir, yeni varliklar cekilir.
-const APP_VERSION = 'v1.5.0';
+const APP_VERSION = 'v1.5.1';
 const CACHE = 'esp32ide-' + APP_VERSION;
 
 // Uygulama kabugu + bagimliliklar + firmware (cevrimdisi flashing icin)
