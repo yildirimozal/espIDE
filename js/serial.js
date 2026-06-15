@@ -264,11 +264,23 @@ export class SerialREPL {
     const bytes = typeof data === 'string' ? enc.encode(data) : data;
     const b64 = b64encode(bytes);
     const CH = 2048; // base64 parca
-    let code = 'import ubinascii\nf=open(' + JSON.stringify(path) + ',"wb")\n';
+    const tmp = path + '.tmp~';
+    // Atomik yazma: once .tmp~'a yaz, tam basariliysa os.rename ile hedefin
+    // uzerine al. open(path,"wb") hedefi aninda sifirladigindan, yazma sirasinda
+    // timeout/reset/ENOSPC olursa orijinal kaybolurdu. rename metadata islemi
+    // oldugu icin ayni fs'te etkin atomiktir; FAT'ta hedef varsa hata verdiginden
+    // once os.remove ile siliniyor.
+    let code = 'import ubinascii,os\n' +
+      'tp=' + JSON.stringify(tmp) + '\n' +
+      'dp=' + JSON.stringify(path) + '\n' +
+      'f=open(tp,"wb")\n';
     for (let i = 0; i < b64.length; i += CH) {
       code += 'f.write(ubinascii.a2b_base64(' + JSON.stringify(b64.slice(i, i + CH)) + '))\n';
     }
-    code += 'f.close()\nprint("OK")\n';
+    code += 'f.close()\n' +
+      'try:\n os.remove(dp)\nexcept OSError:\n pass\n' +
+      'os.rename(tp,dp)\n' +
+      'print("OK")\n';
     const out = await this.evalPy(code, 30000);
     if (!out.includes('OK')) throw new Error('Yazma dogrulanamadi');
   }
