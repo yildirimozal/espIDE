@@ -103,6 +103,7 @@
           <button class="tab" data-bottom="plotter"><span data-i18n="tab_plotter">Plotter</span> 📈</button>
           <button class="tab" data-bottom="wireless"><span data-i18n="tab_wireless">Telsiz</span> 📡</button>
           <button class="tab" data-bottom="csi"><span data-i18n="tab_csi">CSI</span> 🌊</button>
+          <button class="tab" data-bottom="room"><span data-i18n="tab_room">Oda</span> 🛋️</button>
         </div>
         <div class="panel-body">
           <div id="terminal" class="terminal active"></div>
@@ -141,6 +142,24 @@
             <div class="csi-wf-wrap"><canvas id="csi-wf" class="csi-wf"></canvas></div>
             <div class="csi-note muted small" data-i18n="csi_note">CSI, ESP-IDF tabanlı CSI firmware'i gerektirir (MicroPython değil).</div>
             <input type="file" id="csi-file" accept=".bin" hidden>
+          </div>
+          <div id="room" class="room">
+            <div class="room-bar">
+              <span id="room-badge" class="room-badge">—</span>
+              <span id="room-motion" class="muted small"></span>
+              <span id="room-bpm" class="muted small"></span>
+              <span class="spacer"></span>
+              <span id="room-stats" class="muted small"></span>
+              <button id="room-calib" class="btn xs ghost" data-i18n="room_calib">Kalibre et (odayı boşalt)</button>
+            </div>
+            <div class="room-body">
+              <canvas id="room-canvas" class="room-canvas"></canvas>
+              <div class="room-side">
+                <canvas id="room-wave" class="room-mini"></canvas>
+                <canvas id="room-timeline" class="room-mini"></canvas>
+              </div>
+            </div>
+            <div class="room-note muted small" data-i18n="room_note">WiFi sensing: insan/hareket algılar (konum/nesne değil). CSI firmware'i gerekir.</div>
           </div>
         </div>
       </div>

@@ -21,6 +21,7 @@ no cloud**. Everything runs locally over the Web Serial API.
 - **Live plotter** — charts numbers streamed from the board in real time (multi-series; `temp:23.5 hum:40`, CSV, or whitespace), with timestamped **CSV export**.
 - **Wireless monitor** — scan nearby **WiFi** networks (SSID, signal, channel, security) with a channel-usage chart, and **BLE** devices (name, MAC, signal), with optional auto-refresh.
 - **CSI visualizer** — live WiFi **Channel State Information**: per-subcarrier amplitude plot, scrolling waterfall heatmap, and a motion metric (camera-free WiFi sensing). Requires CSI firmware (ESP-IDF based); a custom `.bin` flasher is built in.
+- **Room sensing** — presence (empty / occupied / motion) with calibration, a motion timeline, and an FFT **breathing-rate** estimate from CSI. People/motion sensing, no ML. (Honest scope: not position or object detection.)
 - **Smart pinout** — detects the chip and shows the matching pin diagram (ESP32 / S3 / C3).
 - **Board info** — chip, frequency, flash, free RAM, unique ID, flash usage.
 - **Code editor** with Python syntax highlighting and an examples library.

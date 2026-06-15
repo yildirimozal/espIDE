@@ -48,6 +48,9 @@ const DICT = {
     tab_csi: 'CSI', csi_motion: 'Hareket', csi_stats: '{n} paket · {sub} subcarrier · {rate}/sn',
     csi_waiting: 'CSI verisi bekleniyor — CSI firmware yüklü bir kart bağlayın.',
     csi_flashbin: 'CSI firmware (.bin)', csi_note: 'CSI, ESP-IDF tabanlı bir CSI firmware gerektirir (MicroPython değil). .bin yükleyip offset belirtin.',
+    tab_room: 'Oda', room_idle: 'Bekleniyor', room_empty: 'Boş', room_occupied: 'Dolu (sabit)', room_motion: 'Hareket',
+    room_calibrating: 'Kalibre ediliyor…', room_motion_lbl: 'Hareket', room_breath: 'Nefes', room_calib: 'Kalibre et (odayı boşalt)',
+    room_note: 'WiFi sensing: insan/hareket algılar (konum/nesne değil). CSI firmware gerekir.',
     ex_blink: 'Blink', ex_boardinfo: 'Kart bilgisi', ex_wifi: 'WiFi tara', ex_i2c: 'I2C tara',
   },
   en: {
@@ -96,6 +99,9 @@ const DICT = {
     tab_csi: 'CSI', csi_motion: 'Motion', csi_stats: '{n} packets · {sub} subcarriers · {rate}/s',
     csi_waiting: 'Waiting for CSI data — connect a board flashed with CSI firmware.',
     csi_flashbin: 'CSI firmware (.bin)', csi_note: 'CSI requires ESP-IDF based CSI firmware (not MicroPython). Upload a .bin and set the offset.',
+    tab_room: 'Room', room_idle: 'Waiting', room_empty: 'Empty', room_occupied: 'Occupied (still)', room_motion: 'Motion',
+    room_calibrating: 'Calibrating…', room_motion_lbl: 'Motion', room_breath: 'Breathing', room_calib: 'Calibrate (empty the room)',
+    room_note: 'WiFi sensing: detects people/motion (not position/objects). CSI firmware required.',
     ex_blink: 'Blink', ex_boardinfo: 'Board info', ex_wifi: 'WiFi scan', ex_i2c: 'I2C scan',
   },
 };

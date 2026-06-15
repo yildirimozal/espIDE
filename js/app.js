@@ -9,15 +9,17 @@ import { DeviceFiles, pickLocalFolder, pushToDevice, pullFromDevice } from './fi
 import { Plotter } from './plotter.js';
 import { Wireless } from './wireless.js';
 import { CSI } from './csi.js';
+import { Room } from './room.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 // Cihazdan gelen string'leri innerHTML'e gomerken kacis (XSS korumasi).
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const repl = new SerialREPL();
-let cm, term, dfiles, plotter, wireless, csi, currentChip = 'ESP32', lastInfo = null;
+let cm, term, dfiles, plotter, wireless, csi, room, currentChip = 'ESP32', lastInfo = null;
 let curFile = null, folderHandle = null;
 const csiTap = (txt) => { if (csi) csi.feed(txt); };
+const roomTap = (txt) => { if (room) room.feed(txt); };
 
 // Ornek kodlar (id -> kod). Etiket t('ex_'+id) ile.
 const EXAMPLES = {
@@ -50,11 +52,13 @@ function bottomTab(name) {
   $('plotter').classList.toggle('active', name === 'plotter');
   $('wireless').classList.toggle('active', name === 'wireless');
   $('csi').classList.toggle('active', name === 'csi');
+  $('room').classList.toggle('active', name === 'room');
   if (name === 'terminal' && term) term.fit();
   if (name === 'plotter' && plotter) plotter.resize();
   if (name === 'wireless' && wireless) wireless.scan();
-  repl.removeTap(csiTap);                                  // CSI akışını yalnızca CSI sekmesindeyken dinle
+  repl.removeTap(csiTap); repl.removeTap(roomTap);         // ham akışı yalnızca ilgili sekmedeyken dinle
   if (name === 'csi' && csi) { repl.addTap(csiTap); csi.resize(); }
+  if (name === 'room' && room) { repl.addTap(roomTap); room.resize(); }
 }
 
 // --- Baglan ---
@@ -257,6 +261,8 @@ function init() {
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
   wireless = new Wireless(repl, { results: $('wl-results'), auto: $('wl-auto') });
   csi = new CSI({ amp: $('csi-amp'), wf: $('csi-wf'), motion: $('csi-motion'), stats: $('csi-stats') });
+  room = new Room({ room: $('room-canvas'), wave: $('room-wave'), timeline: $('room-timeline'),
+    badge: $('room-badge'), motion: $('room-motion'), bpm: $('room-bpm'), stats: $('room-stats') });
 
   applyI18n();
   $('lang').value = getLang();
@@ -291,6 +297,7 @@ function init() {
   $('csi-clear').onclick = () => csi.clear();
   $('csi-flash').onclick = () => $('csi-file').click();
   $('csi-file').addEventListener('change', flashCsi);
+  $('room-calib').onclick = () => room.startCalibration();
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);
