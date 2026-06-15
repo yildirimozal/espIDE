@@ -109,6 +109,15 @@ esp32-web-ide/
 └── manifest.webmanifest
 ```
 
+## Katkıda bulunma
+
+espIDE açık kaynak ve büyüyor — her boyutta katkı memnuniyetle karşılanır. Başlamak için
+güzel yerler: yeni **kart pinout'ları** (`js/boards.js`), **örnekler** (`js/app.js`),
+**çeviriler** (`js/i18n.js`) ve belgeler. Geliştirme kurulumu ve kurallar için
+**[CONTRIBUTING.md](CONTRIBUTING.md)** dosyasına bakın.
+
+- ⭐ Repoyu yıldızlayın · 🐛 Issue açın · 🔧 Pull request gönderin · 💡 Fikir paylaşın
+
 ## Lisans
 
 MIT — bkz. [LICENSE](LICENSE).

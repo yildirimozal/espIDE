@@ -110,6 +110,15 @@ esp32-web-ide/
 └── manifest.webmanifest
 ```
 
+## Contributing
+
+espIDE is open source and growing — contributions of every size are welcome. Great places
+to start: new **board pinouts** (`js/boards.js`), **examples** (`js/app.js`),
+**translations** (`js/i18n.js`), and docs. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for
+the development setup and guidelines.
+
+- ⭐ Star the repo · 🐛 Open an issue · 🔧 Send a pull request · 💡 Share ideas
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
