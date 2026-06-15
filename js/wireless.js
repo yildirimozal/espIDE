@@ -109,7 +109,7 @@ export class Wireless {
       const [ssid, mac, channel, rssi, auth] = n;
       const secure = auth > 0;
       return `<tr>
-        <td class="nm">${ssid ? esc(ssid) : '<i class="muted">' + t('w_hidden') + '</i>'}<div class="sub">${mac}</div></td>
+        <td class="nm">${ssid ? esc(ssid) : '<i class="muted">' + t('w_hidden') + '</i>'}<div class="sub">${esc(mac)}</div></td>
         <td class="sig">${bar(rssi)}</td>
         <td class="ch">${channel}</td>
         <td class="sec">${secure ? '🔒' : '🔓'} ${authLabel(auth)}</td>
@@ -129,7 +129,7 @@ export class Wireless {
       const [name, mac, rssi] = d;
       return `<tr>
         <td class="nm">${name ? esc(name) : '<i class="muted">' + t('w_noname') + '</i>'}</td>
-        <td class="mac">${mac}</td>
+        <td class="mac">${esc(mac)}</td>
         <td class="sig">${bar(rssi)}</td>
       </tr>`;
     }).join('');
