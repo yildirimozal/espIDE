@@ -102,11 +102,14 @@ async function refreshFiles() {
   await dfiles.refresh();
   try { const d = await repl.fsDf(); $('df').textContent = t('df_usage', { used: (d.used / 1024) | 0, total: (d.total / 1024) | 0 }); } catch (e) {}
 }
-async function openFile(path) {
+// Editorde kaydedilmemis degisiklik varsa kullaniciya sor (setValue oncesi).
+function confirmDiscard() { return !cm.isDirty() || confirm(t('confirm_discard')); }
+async function openFile(path, skipGuard = false) {
+  if (!skipGuard && !confirmDiscard()) return;
   setStatus(t('st_opening'), 'busy');
   try {
     const text = await repl.fsReadText(path);
-    cm.setValue(text); curFile = path; $('cur-file').textContent = path;
+    cm.setValue(text); cm.markSaved(); curFile = path; $('cur-file').textContent = path;
     statusConnected();
   } catch (e) { out(t('msg_open_fail', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
 }
@@ -116,6 +119,7 @@ async function saveToDevice() {
   setStatus(t('st_saving'), 'busy');
   try {
     await repl.fsWrite(path, cm.getValue());
+    cm.markSaved();
     curFile = path; $('cur-file').textContent = path;
     out(t('msg_saved', { path }), 'sys');
     await refreshFiles(); statusConnected();
@@ -123,7 +127,8 @@ async function saveToDevice() {
 }
 async function newFile() {
   const path = prompt(t('prompt_newfile'), '/new.py'); if (!path) return;
-  await repl.fsWrite(path, '# ' + path + '\n'); await refreshFiles(); openFile(path);
+  if (!confirmDiscard()) return;
+  await repl.fsWrite(path, '# ' + path + '\n'); await refreshFiles(); openFile(path, true);
 }
 async function delSelected() {
   if (!dfiles.selected) { out(t('msg_pick_file'), 'sys'); return; }
@@ -217,7 +222,7 @@ function init() {
   $('lang').value = getLang();
   buildExamples();
 
-  $('examples').addEventListener('change', (e) => { if (EXAMPLES[e.target.value]) { cm.setValue(EXAMPLES[e.target.value]); e.target.value = ''; } });
+  $('examples').addEventListener('change', (e) => { if (EXAMPLES[e.target.value]) { if (confirmDiscard()) { cm.setValue(EXAMPLES[e.target.value]); cm.markSaved(); } e.target.value = ''; } });
   $('lang').addEventListener('change', (e) => changeLang(e.target.value));
 
   document.querySelectorAll('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => {

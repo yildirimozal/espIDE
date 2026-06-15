@@ -38,5 +38,10 @@ export function initEditor(el, onRun) {
   });
   // Yazdikca tarayicida sakla (kaybolmasin)
   cm.on('change', () => localStorage.setItem('esp32ide_kod', cm.getValue()));
+  // Kirli-durum takibi (CodeMirror generation API): setValue ile kaydedilmemis
+  // degisiklik ezilmeden once app.js confirm sorabilsin diye.
+  let savedGen = cm.changeGeneration(true);
+  cm.markSaved = () => { savedGen = cm.changeGeneration(true); };
+  cm.isDirty = () => !cm.isClean(savedGen);
   return cm;
 }
