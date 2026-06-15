@@ -1,4 +1,4 @@
-// app.js — Pro v2 orkestra: editor + terminal + dosya agaci + senkron + kart.
+// app.js — Pro v2 orkestra: editor + terminal + dosya agaci + senkron + kart + plotter + i18n.
 import { SerialREPL } from './serial.js';
 import { flashFirmware } from './flash.js';
 import { BOARDS, boardsForChip, getBoard, INFO_SCRIPT, chipFromInfo } from './boards.js';
@@ -7,25 +7,27 @@ import { initEditor } from './editor.js';
 import { initTerminal } from './terminal.js';
 import { DeviceFiles, pickLocalFolder, pushToDevice, pullFromDevice } from './files.js';
 import { Plotter } from './plotter.js';
+import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const repl = new SerialREPL();
-let cm, term, dfiles, plotter, currentChip = 'ESP32';
-let curFile = null;            // editordeki dosyanin cihaz yolu
-let folderHandle = null;       // yerel senkron klasoru
+let cm, term, dfiles, plotter, currentChip = 'ESP32', lastInfo = null;
+let curFile = null, folderHandle = null;
 
-const ORNEKLER = {
-  'Blink': `from machine import Pin\nimport time\nled = Pin(2, Pin.OUT)\nwhile True:\n    led.value(not led.value())\n    time.sleep(0.3)`,
-  'Kart bilgisi': `import machine, gc, os\nprint("freq:", machine.freq()//10**6, "MHz")\nprint("free:", gc.mem_free(), "B")\nprint(os.uname())`,
-  'WiFi tara': `import network\nw=network.WLAN(network.STA_IF); w.active(True)\nfor a in w.scan(): print(a[0].decode(), a[2], a[3])`,
-  'I2C tara': `from machine import I2C, Pin\ni2c=I2C(0, scl=Pin(22), sda=Pin(21))\nprint("bulunan adresler:", [hex(x) for x in i2c.scan()])`,
+// Ornek kodlar (id -> kod). Etiket t('ex_'+id) ile.
+const EXAMPLES = {
+  blink: `from machine import Pin\nimport time\nled = Pin(2, Pin.OUT)\nwhile True:\n    led.value(not led.value())\n    time.sleep(0.3)`,
+  boardinfo: `import machine, gc, os\nprint("freq:", machine.freq()//10**6, "MHz")\nprint("free:", gc.mem_free(), "B")\nprint(os.uname())`,
+  wifi: `import network\nw=network.WLAN(network.STA_IF); w.active(True)\nfor a in w.scan(): print(a[0].decode(), a[2], a[3])`,
+  i2c: `from machine import I2C, Pin\ni2c=I2C(0, scl=Pin(22), sda=Pin(21))\nprint("addresses:", [hex(x) for x in i2c.scan()])`,
 };
 
-function out(t, cls = '') {
-  const s = document.createElement('span'); if (cls) s.className = cls; s.textContent = t;
+function out(text, cls = '') {
+  const s = document.createElement('span'); if (cls) s.className = cls; s.textContent = text;
   $('output').appendChild(s); $('output').scrollTop = $('output').scrollHeight;
 }
-function setStatus(t, st) { $('status-text').textContent = t; $('status-dot').className = 'dot ' + (st || ''); }
+function statusConnected() { setStatus(t('st_connected', { chip: currentChip }), 'ok'); }
+function setStatus(text, st) { $('status-text').textContent = text; $('status-dot').className = 'dot ' + (st || ''); }
 function setConnectedUI(c) {
   $('btn-connect').classList.toggle('hidden', c);
   $('btn-disconnect').classList.toggle('hidden', !c);
@@ -42,42 +44,47 @@ function bottomTab(name) {
 
 // --- Baglan ---
 async function connect() {
-  if (!navigator.serial) { alert('Web Serial gerekli — Chrome/Edge kullan.'); return; }
+  if (!navigator.serial) { alert(t('msg_need_serial')); return; }
   try {
-    setStatus('port seçiliyor…', 'busy');
+    setStatus(t('st_selecting'), 'busy');
     await repl.requestPort();
-    repl.onDisconnect = () => { setConnectedUI(false); setStatus('kart koptu', 'err'); out('\n⚠️ Bağlantı koptu.\n', 'err'); };
+    repl.onDisconnect = () => { setConnectedUI(false); setStatus(t('st_dropped'), 'err'); out(t('msg_dropped'), 'err'); };
     await repl.open(parseInt($('baud').value, 10));
     setConnectedUI(true);
-    setStatus('kart okunuyor…', 'busy');
+    out(t('msg_connected'), 'sys');
+    setStatus(t('st_reading'), 'busy');
     await refreshInfo();
     await refreshFiles();
     await repl.terminalReady();
-    if (term) term.write('\r\n\x1b[36m# Bağlandı — etkileşimli REPL hazır. Ctrl-C ile durdur.\x1b[0m\r\n');
-    setStatus('bağlı · ' + currentChip, 'ok');
+    if (term) term.write(t('msg_repl_ready'));
+    statusConnected();
   } catch (e) {
-    setStatus('bağlanamadı', 'err'); out('Bağlantı hatası: ' + e.message + '\n', 'err');
-    out('Kart boşsa "Firmware" ile MicroPython yükle.\n', 'sys');
+    setStatus(t('st_connfail'), 'err'); out(t('msg_conn_error', { e: e.message }), 'err');
+    out(t('msg_flash_hint'), 'sys');
     try { await repl.close(); } catch (_) {}
     setConnectedUI(false);
   }
 }
-async function disconnect() { await repl.close(); repl.port = null; setConnectedUI(false); setStatus('bağlı değil'); out('Bağlantı kesildi.\n', 'sys'); }
+async function disconnect() { await repl.close(); repl.port = null; setConnectedUI(false); setStatus(t('st_disconnected')); out(t('msg_disconnected'), 'sys'); }
 
 // --- Kart bilgisi + pinout ---
+function renderInfo(info) {
+  if (!info) return;
+  $('info').innerHTML = `
+    <div><b>${t('info_chip')}</b><span>${currentChip}</span></div>
+    <div><b>${t('info_model')}</b><span>${info.machine}</span></div>
+    <div><b>${t('info_mpy')}</b><span>${info.release}</span></div>
+    <div><b>${t('info_freq')}</b><span>${(info.freq / 1e6) | 0} MHz</span></div>
+    <div><b>${t('info_flash')}</b><span>${(info.flash / 1048576) | 0} MB</span></div>
+    <div><b>${t('info_freeram')}</b><span>${(info.mem_free / 1024) | 0} KB</span></div>
+    <div><b>${t('info_uid')}</b><span>${info.uid}</span></div>`;
+}
 async function refreshInfo() {
   const { stdout, stderr } = await repl.exec(INFO_SCRIPT, 8000);
   if (stderr.trim()) throw new Error(stderr.trim());
   const info = JSON.parse(stdout.trim().split('\n').pop());
-  currentChip = chipFromInfo(info);
-  $('info').innerHTML = `
-    <div><b>Çip</b><span>${currentChip}</span></div>
-    <div><b>Model</b><span>${info.machine}</span></div>
-    <div><b>MicroPython</b><span>${info.release}</span></div>
-    <div><b>Frekans</b><span>${(info.freq / 1e6) | 0} MHz</span></div>
-    <div><b>Flash</b><span>${(info.flash / 1048576) | 0} MB</span></div>
-    <div><b>Boş RAM</b><span>${(info.mem_free / 1024) | 0} KB</span></div>
-    <div><b>UID</b><span>${info.uid}</span></div>`;
+  lastInfo = info; currentChip = chipFromInfo(info);
+  renderInfo(info);
   const sel = $('board-select'); sel.innerHTML = '';
   BOARDS.forEach((b) => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name + (b.chip === currentChip ? ' ✓' : ''); sel.appendChild(o); });
   sel.value = boardsForChip(currentChip)[0].id;
@@ -88,39 +95,39 @@ function drawBoard(id) { renderPinout($('pinout'), getBoard(id), (g, a) => out(`
 // --- Dosya agaci ---
 async function refreshFiles() {
   await dfiles.refresh();
-  try { const d = await repl.fsDf(); $('df').textContent = `flash: ${(d.used / 1024) | 0} / ${(d.total / 1024) | 0} KB kullanılıyor`; } catch (e) {}
+  try { const d = await repl.fsDf(); $('df').textContent = t('df_usage', { used: (d.used / 1024) | 0, total: (d.total / 1024) | 0 }); } catch (e) {}
 }
 async function openFile(path) {
-  setStatus('açılıyor…', 'busy');
+  setStatus(t('st_opening'), 'busy');
   try {
     const text = await repl.fsReadText(path);
     cm.setValue(text); curFile = path; $('cur-file').textContent = path;
-    setStatus('bağlı · ' + currentChip, 'ok');
-  } catch (e) { out('Açılamadı: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
+    statusConnected();
+  } catch (e) { out(t('msg_open_fail', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
 }
 async function saveToDevice() {
   let path = curFile;
-  if (!path) { path = prompt('Cihazdaki dosya yolu:', '/main.py'); if (!path) return; }
-  setStatus('kaydediliyor…', 'busy');
+  if (!path) { path = prompt(t('prompt_path'), '/main.py'); if (!path) return; }
+  setStatus(t('st_saving'), 'busy');
   try {
     await repl.fsWrite(path, cm.getValue());
     curFile = path; $('cur-file').textContent = path;
-    out(`💾 ${path} karta kaydedildi.\n`, 'sys');
-    await refreshFiles(); setStatus('bağlı · ' + currentChip, 'ok');
-  } catch (e) { out('Kaydedilemedi: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
+    out(t('msg_saved', { path }), 'sys');
+    await refreshFiles(); statusConnected();
+  } catch (e) { out(t('msg_open_fail', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
 }
 async function newFile() {
-  const path = prompt('Yeni dosya yolu:', '/yeni.py'); if (!path) return;
+  const path = prompt(t('prompt_newfile'), '/new.py'); if (!path) return;
   await repl.fsWrite(path, '# ' + path + '\n'); await refreshFiles(); openFile(path);
 }
 async function delSelected() {
-  if (!dfiles.selected) { out('Önce bir dosya seç.\n', 'sys'); return; }
-  if (!confirm(dfiles.selected + ' silinsin mi?')) return;
+  if (!dfiles.selected) { out(t('msg_pick_file'), 'sys'); return; }
+  if (!confirm(t('confirm_delete', { path: dfiles.selected }))) return;
   try { await repl.fsDelete(dfiles.selected, dfiles.selectedType === 'dir'); await refreshFiles(); }
-  catch (e) { out('Silinemedi: ' + e.message + '\n', 'err'); }
+  catch (e) { out(t('msg_open_fail', { e: e.message }), 'err'); }
 }
 async function runSelected() {
-  if (!dfiles.selected || dfiles.selectedType !== 'file') { out('Önce bir dosya seç.\n', 'sys'); return; }
+  if (!dfiles.selected || dfiles.selectedType !== 'file') { out(t('msg_pick_file'), 'sys'); return; }
   await runCode(`exec(open(${JSON.stringify(dfiles.selected)}).read())`);
 }
 
@@ -128,35 +135,35 @@ async function runSelected() {
 async function runCode(code) {
   if (!repl.connected) return;
   if (!$('plotter').classList.contains('active')) bottomTab('output');
-  setStatus('çalışıyor…', 'busy');
+  setStatus(t('st_running'), 'busy');
   out('\n▶ ' + new Date().toLocaleTimeString() + '\n', 'sys');
   try {
-    const onChunk = (t) => { out(t); if (plotter) plotter.feed(t); };
-    const { stderr } = await repl.run(code, 60000, onChunk); // 60 sn sessizlik = timeout
+    const onChunk = (txt) => { out(txt); if (plotter) plotter.feed(txt); };
+    const { stderr } = await repl.run(code, 60000, onChunk);
     if (stderr && !stderr.includes('KeyboardInterrupt')) out(stderr, 'err');
-    out('\n✓ bitti\n', 'sys'); setStatus('bağlı · ' + currentChip, 'ok');
-  } catch (e) { out('\nHata: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
+    out(t('run_done'), 'sys'); statusConnected();
+  } catch (e) { out(t('run_error', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
 }
 const run = () => runCode(cm.getValue());
-async function stop() { await repl.interrupt(); out('\n⏹ Ctrl-C\n', 'sys'); }
-async function resetBoard() { await repl.hardReset(); out('⟲ reset\n', 'sys'); }
+async function stop() { await repl.interrupt(); out(t('stopped'), 'sys'); }
+async function resetBoard() { await repl.hardReset(); out(t('reset_done'), 'sys'); }
 
 // --- Firmware ---
 async function flash() {
-  if (!navigator.serial) return alert('Web Serial gerekli.');
-  if (!confirm('Karta MicroPython yüklenecek, her şey SİLİNİR. Devam?')) return;
+  if (!navigator.serial) return alert(t('msg_need_serial'));
+  if (!confirm(t('confirm_flash'))) return;
   $('flash-progress').classList.remove('hidden');
   try {
     if (repl.connected) await repl.close();
     if (!repl.port) await repl.requestPort();
-    setStatus('firmware…', 'busy'); bottomTab('output');
-    const res = await flashFirmware(repl.port, { onLog: (t) => out(t), onProgress: (p) => { $('flash-bar').style.width = ((p * 100) | 0) + '%'; } });
-    out(`\n✅ ${res.firmware.ad} yüklendi.\n`, 'sys');
+    setStatus(t('st_firmware'), 'busy'); bottomTab('output');
+    const res = await flashFirmware(repl.port, { onLog: (txt) => out(txt), onProgress: (p) => { $('flash-bar').style.width = ((p * 100) | 0) + '%'; } });
+    out(t('flash_done', { name: res.firmware.ad }), 'sys');
     await new Promise((r) => setTimeout(r, 2500));
     await repl.open(parseInt($('baud').value, 10));
     setConnectedUI(true); await refreshInfo(); await refreshFiles(); await repl.terminalReady();
-    setStatus('bağlı · ' + currentChip, 'ok');
-  } catch (e) { out('Firmware hatası: ' + e.message + '\n', 'err'); setStatus('hata', 'err'); }
+    statusConnected();
+  } catch (e) { out(t('flash_error', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
   finally { setTimeout(() => $('flash-progress').classList.add('hidden'), 1500); }
 }
 
@@ -166,29 +173,46 @@ async function pickFolder() {
   catch (e) { /* iptal */ }
 }
 async function pushFolder() {
-  if (!folderHandle || !repl.connected) return; bottomTab('output');
-  out('\n→ Karta gönderiliyor…\n', 'sys');
-  try { await pushToDevice(repl, folderHandle, (t) => out(t)); await refreshFiles(); } catch (e) { out('Senkron hatası: ' + e.message + '\n', 'err'); }
+  if (!folderHandle || !repl.connected) return; bottomTab('output'); out(t('sync_push'), 'sys');
+  try { await pushToDevice(repl, folderHandle, (txt) => out(txt)); await refreshFiles(); } catch (e) { out(t('sync_error', { e: e.message }), 'err'); }
 }
 async function pullFolder() {
-  if (!folderHandle || !repl.connected) return; bottomTab('output');
-  out('\n← Karttan alınıyor…\n', 'sys');
-  try { await pullFromDevice(repl, folderHandle, (t) => out(t)); } catch (e) { out('Senkron hatası: ' + e.message + '\n', 'err'); }
+  if (!folderHandle || !repl.connected) return; bottomTab('output'); out(t('sync_pull'), 'sys');
+  try { await pullFromDevice(repl, folderHandle, (txt) => out(txt)); } catch (e) { out(t('sync_error', { e: e.message }), 'err'); }
+}
+
+// --- Ornek menusu ---
+function buildExamples() {
+  const exSel = $('examples');
+  exSel.innerHTML = `<option value="">${t('examples')}</option>`;
+  Object.keys(EXAMPLES).forEach((id) => { const o = document.createElement('option'); o.value = id; o.textContent = t('ex_' + id); exSel.appendChild(o); });
+}
+
+// --- Dil degisimi ---
+function changeLang(l) {
+  setLang(l);
+  applyI18n();
+  buildExamples();
+  renderInfo(lastInfo);
+  drawBoard($('board-select').value || BOARDS[0].id);
+  if (repl.connected) statusConnected(); else setStatus(t('st_disconnected'));
 }
 
 // --- Baslat ---
 function init() {
   cm = initEditor($('editor'), run);
   try { term = initTerminal($('terminal'), repl); }
-  catch (e) { console.error('Terminal yüklenemedi:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">Terminal yüklenemedi (xterm.js). Çıktı sekmesini kullan.</div>'; }
+  catch (e) { console.error('Terminal:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">xterm.js?</div>'; }
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
 
-  const exSel = $('examples');
-  Object.keys(ORNEKLER).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = k; exSel.appendChild(o); });
-  exSel.addEventListener('change', () => { if (ORNEKLER[exSel.value]) { cm.setValue(ORNEKLER[exSel.value]); exSel.value = ''; } });
+  applyI18n();
+  $('lang').value = getLang();
+  buildExamples();
 
-  // Sekmeler
+  $('examples').addEventListener('change', (e) => { if (EXAMPLES[e.target.value]) { cm.setValue(EXAMPLES[e.target.value]); e.target.value = ''; } });
+  $('lang').addEventListener('change', (e) => changeLang(e.target.value));
+
   document.querySelectorAll('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('.tab[data-tab]').forEach((x) => x.classList.toggle('active', x === b));
     $('pane-files').classList.toggle('active', b.dataset.tab === 'files');
@@ -209,7 +233,7 @@ function init() {
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);
-  if (!navigator.serial) { setStatus('Web Serial yok — Chrome/Edge', 'err'); out('⚠️ Chrome veya Edge kullan.\n', 'err'); }
-  else { setStatus('bağlı değil'); out('Kartı tak, "Bağlan"a tıkla. Boş kart → "Firmware".\n', 'sys'); }
+  if (!navigator.serial) { setStatus(t('st_disconnected'), 'err'); out(t('msg_serial_missing'), 'err'); }
+  else { setStatus(t('st_disconnected')); out(t('msg_hint_connect'), 'sys'); }
 }
 init();

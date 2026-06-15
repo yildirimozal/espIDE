@@ -1,22 +1,22 @@
 // editor.js — CodeMirror tabanli kod editoru (Python renklendirme).
 // CodeMirror, index.html'de CDN'den global olarak yuklenir.
 
-const VARSAYILAN = `# ESP32 Web IDE'ye hos geldin!
-# Kodu yaz, Ctrl+Enter ile karta gonder ve calistir.
+const VARSAYILAN = `# Welcome to ESP32 Web IDE!
+# Write code, press Ctrl+Enter to send & run it on the board.
 
 from machine import Pin
 import time
 
-led = Pin(2, Pin.OUT)   # dahili LED (klasik ESP32'de GPIO2)
+led = Pin(2, Pin.OUT)   # onboard LED (GPIO2 on classic ESP32)
 
 for i in range(5):
     led.value(1)
     time.sleep(0.2)
     led.value(0)
     time.sleep(0.2)
-    print("yanip sondu:", i + 1)
+    print("blink:", i + 1)
 
-print("Bitti! Soldaki pinout'a ve cikti penceresine bak.")
+print("Done! Check the pinout and the output panel.")
 `;
 
 export function initEditor(el, onRun) {

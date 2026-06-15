@@ -25,15 +25,18 @@
     <div class="logo">⚡ ESP32 <span>Web IDE</span></div>
     <div class="status"><span id="status-dot" class="dot"></span><span id="status-text">…</span></div>
     <div class="spacer"></div>
-    <label class="inline">baud
+    <select id="lang" class="mini-select" title="Language / Dil">
+      <option value="en">EN</option><option value="tr">TR</option>
+    </select>
+    <label class="inline"><span data-i18n="baud">baud</span>
       <select id="baud" class="mini-select">
         <option>115200</option><option>9600</option><option>230400</option><option>460800</option><option>921600</option>
       </select>
     </label>
-    <button id="btn-reset" class="btn ghost" title="Kartı resetle (RTS)">⟲ Reset</button>
-    <button id="btn-flash" class="btn ghost" title="Firmware yükle">⚙︎ Firmware</button>
-    <button id="btn-connect" class="btn primary">Bağlan</button>
-    <button id="btn-disconnect" class="btn ghost hidden">Kes</button>
+    <button id="btn-reset" class="btn ghost">⟲ <span data-i18n="reset">Reset</span></button>
+    <button id="btn-flash" class="btn ghost">⚙︎ <span data-i18n="firmware">Firmware</span></button>
+    <button id="btn-connect" class="btn primary" data-i18n="connect">Bağlan</button>
+    <button id="btn-disconnect" class="btn ghost hidden" data-i18n="disconnect">Kes</button>
   </header>
 
   <div id="flash-progress" class="flash-progress hidden"><div id="flash-bar" class="flash-bar"></div></div>
@@ -42,40 +45,40 @@
     <!-- SOL PANEL: sekmeli -->
     <aside class="sidebar">
       <div class="tabs">
-        <button class="tab active" data-tab="files">Dosyalar</button>
-        <button class="tab" data-tab="board">Kart</button>
+        <button class="tab active" data-tab="files" data-i18n="tab_files">Dosyalar</button>
+        <button class="tab" data-tab="board" data-i18n="tab_board">Kart</button>
       </div>
 
       <!-- Dosyalar sekmesi -->
       <div class="tabpane active" id="pane-files">
         <div class="file-actions">
-          <button id="f-refresh" class="btn xs ghost" title="Yenile">⟳</button>
-          <button id="f-new" class="btn xs ghost" title="Yeni dosya">＋</button>
-          <button id="f-del" class="btn xs ghost" title="Sil">🗑</button>
-          <button id="f-run" class="btn xs ghost" title="Seçili dosyayı çalıştır">▶</button>
-          <button id="f-open" class="btn xs ghost" title="Seçili dosyayı editöre aç">✎</button>
+          <button id="f-refresh" class="btn xs ghost" data-i18n-title="f_refresh">⟳</button>
+          <button id="f-new" class="btn xs ghost" data-i18n-title="f_new">＋</button>
+          <button id="f-del" class="btn xs ghost" data-i18n-title="f_del">🗑</button>
+          <button id="f-run" class="btn xs ghost" data-i18n-title="f_run">▶</button>
+          <button id="f-open" class="btn xs ghost" data-i18n-title="f_open">✎</button>
         </div>
-        <div id="tree" class="tree-wrap"><div class="muted small">Bağlanınca cihaz dosyaları listelenir.</div></div>
+        <div id="tree" class="tree-wrap"><div class="muted small" data-i18n="tree_placeholder">Bağlanınca cihaz dosyaları listelenir.</div></div>
         <div id="df" class="df muted small"></div>
 
-        <h4>Yerel klasör senkronu</h4>
+        <h4 data-i18n="local_sync">Yerel klasör senkronu</h4>
         <div class="file-actions wrap">
-          <button id="s-pick" class="btn xs ghost">📂 Klasör seç</button>
-          <button id="s-push" class="btn xs ghost" disabled>→ Karta gönder</button>
-          <button id="s-pull" class="btn xs ghost" disabled>← Karttan al</button>
+          <button id="s-pick" class="btn xs ghost" data-i18n="pick_folder">📂 Klasör seç</button>
+          <button id="s-push" class="btn xs ghost" disabled data-i18n="push_board">→ Karta gönder</button>
+          <button id="s-pull" class="btn xs ghost" disabled data-i18n="pull_board">← Karttan al</button>
         </div>
-        <div id="s-folder" class="muted small">klasör seçilmedi</div>
+        <div id="s-folder" class="muted small" data-i18n="no_folder">klasör seçilmedi</div>
       </div>
 
       <!-- Kart sekmesi -->
       <div class="tabpane" id="pane-board">
-        <h4>Kart Bilgisi</h4>
-        <div id="info" class="info-panel"><div class="muted small">Bağlanınca görünür.</div></div>
-        <h4>Pin Düzeni <select id="board-select" class="mini-select"></select></h4>
+        <h4 data-i18n="board_info">Kart Bilgisi</h4>
+        <div id="info" class="info-panel"><div class="muted small" data-i18n="tree_placeholder">Bağlanınca görünür.</div></div>
+        <h4><span data-i18n="pinout">Pin Düzeni</span> <select id="board-select" class="mini-select"></select></h4>
         <div id="pinout" class="pinout"></div>
         <p class="legend">
-          <span class="lg io">GPIO</span><span class="lg power">Güç</span>
-          <span class="lg gnd">GND</span><span class="lg inputonly">Giriş</span><span class="lg flash">Flash</span>
+          <span class="lg io" data-i18n="leg_gpio">GPIO</span><span class="lg power" data-i18n="leg_power">Güç</span>
+          <span class="lg gnd" data-i18n="leg_gnd">GND</span><span class="lg inputonly" data-i18n="leg_input">Giriş</span><span class="lg flash" data-i18n="leg_flash">Flash</span>
         </p>
       </div>
     </aside>
@@ -83,21 +86,21 @@
     <!-- SAG: editor + alt panel -->
     <section class="workspace">
       <div class="toolbar">
-        <button id="btn-run" class="btn run" disabled>▶ Çalıştır <kbd>⌃↵</kbd></button>
-        <button id="btn-stop" class="btn ghost" disabled>⏹</button>
+        <button id="btn-run" class="btn run" disabled>▶ <span data-i18n="run">Çalıştır</span> <kbd>⌃↵</kbd></button>
+        <button id="btn-stop" class="btn ghost" disabled data-i18n-title="stop">⏹</button>
         <span class="filename" id="cur-file">untitled.py</span>
-        <button id="btn-save" class="btn ghost" disabled title="Editörü karta kaydet">💾 Karta kaydet</button>
-        <select id="examples" class="select"><option value="">Örnekler…</option></select>
+        <button id="btn-save" class="btn ghost" disabled data-i18n-title="save_board_t">💾 <span data-i18n="save_board">Karta kaydet</span></button>
+        <select id="examples" class="select"><option value="" data-i18n="examples">Örnekler…</option></select>
         <div class="spacer"></div>
-        <button id="btn-clear" class="btn ghost">🧹</button>
+        <button id="btn-clear" class="btn ghost" data-i18n-title="clear_t">🧹</button>
       </div>
       <div id="editor" class="editor"></div>
 
       <div class="panel">
         <div class="tabs sm">
-          <button class="tab active" data-bottom="terminal">Terminal</button>
-          <button class="tab" data-bottom="output">Çıktı</button>
-          <button class="tab" data-bottom="plotter">Plotter 📈</button>
+          <button class="tab active" data-bottom="terminal" data-i18n="tab_terminal">Terminal</button>
+          <button class="tab" data-bottom="output" data-i18n="tab_output">Çıktı</button>
+          <button class="tab" data-bottom="plotter"><span data-i18n="tab_plotter">Plotter</span> 📈</button>
         </div>
         <div class="panel-body">
           <div id="terminal" class="terminal active"></div>
@@ -106,8 +109,8 @@
             <div class="plot-bar">
               <span id="plot-legend" class="plot-legend"></span>
               <span class="spacer"></span>
-              <button id="plot-clear" class="btn xs ghost">🧹 Temizle</button>
-              <button id="plot-csv" class="btn xs ghost">⭳ CSV indir</button>
+              <button id="plot-clear" class="btn xs ghost" data-i18n="plot_clear">🧹 Temizle</button>
+              <button id="plot-csv" class="btn xs ghost" data-i18n="plot_csv">⭳ CSV indir</button>
             </div>
             <canvas id="plot-canvas" class="plot-canvas"></canvas>
           </div>

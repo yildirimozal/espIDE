@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // files.js — Cihaz dosya agaci + yerel klasor senkronu (File System Access API).
 
 const ICON = { dir: '📁', file: '📄', py: '🐍', boot: '⚙️', main: '▶️' };
@@ -21,7 +22,7 @@ export class DeviceFiles {
   }
 
   async refresh() {
-    this.el.innerHTML = '<div class="muted small">yükleniyor…</div>';
+    this.el.innerHTML = '<div class="muted small">' + t('fs_loading') + '</div>';
     try {
       const root = document.createElement('ul');
       root.className = 'tree';
@@ -29,7 +30,7 @@ export class DeviceFiles {
       this.el.innerHTML = '';
       this.el.appendChild(root);
     } catch (e) {
-      this.el.innerHTML = '<div class="err small">Liste alınamadı: ' + e.message + '</div>';
+      this.el.innerHTML = '<div class="err small">' + t('fs_list_err', { e: e.message }) + '</div>';
     }
   }
 
@@ -89,7 +90,7 @@ export async function walkDevice(repl, path = '/', acc = []) {
 
 // --- Yerel klasor senkronu (File System Access API, Chrome/Edge) ---
 export async function pickLocalFolder() {
-  if (!window.showDirectoryPicker) throw new Error('Tarayıcı klasör erişimini desteklemiyor (Chrome/Edge gerekir).');
+  if (!window.showDirectoryPicker) throw new Error(t('fs_no_fsa'));
   return window.showDirectoryPicker({ mode: 'readwrite' });
 }
 
@@ -117,7 +118,7 @@ async function ensureDeviceDirs(repl, filePath) {
 // Yerel -> Cihaz
 export async function pushToDevice(repl, dirHandle, onLog = () => {}) {
   const files = await walkLocal(dirHandle);
-  onLog(`${files.length} dosya gönderilecek…\n`);
+  onLog(t('fs_count_push', { n: files.length }));
   for (const f of files) {
     const file = await f.handle.getFile();
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -125,13 +126,13 @@ export async function pushToDevice(repl, dirHandle, onLog = () => {}) {
     await repl.fsWrite(f.path, bytes);
     onLog(`→ ${f.path} (${bytes.length} B)\n`);
   }
-  onLog('✓ Karta gönderme tamam.\n');
+  onLog(t('fs_push_done'));
 }
 
 // Cihaz -> Yerel
 export async function pullFromDevice(repl, dirHandle, onLog = () => {}) {
   const paths = await walkDevice(repl, '/');
-  onLog(`${paths.length} dosya alınacak…\n`);
+  onLog(t('fs_count_pull', { n: paths.length }));
   for (const p of paths) {
     const bytes = await repl.fsRead(p);
     // yerel klasor yapisini olustur
@@ -144,5 +145,5 @@ export async function pullFromDevice(repl, dirHandle, onLog = () => {}) {
     await w.write(bytes); await w.close();
     onLog(`← ${p} (${bytes.length} B)\n`);
   }
-  onLog('✓ Karttan alma tamam.\n');
+  onLog(t('fs_pull_done'));
 }

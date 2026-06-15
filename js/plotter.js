@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // plotter.js — Canli coklu-seri grafik + zaman damgali log + CSV export.
 // Seri ciktidan sayilari ayristirir:
 //   "23.5"            -> tek seri
@@ -99,7 +100,7 @@ export class Plotter {
     }
     if (!n) {
       ctx.fillStyle = '#8b949e'; ctx.font = '13px monospace';
-      ctx.fillText('Veri bekleniyor — sayı yazdıran bir kod çalıştır (örn. print sıcaklık).', padL, H / 2);
+      ctx.fillText(t('plot_waiting'), padL, H / 2);
       return;
     }
     if (min === max) { min -= 1; max += 1; }
@@ -138,7 +139,7 @@ export class Plotter {
       const last = [...s.values].reverse().find((v) => Number.isFinite(v));
       html += `<span class="ls"><i style="background:${s.color}"></i>${name}: <b>${last !== undefined ? last : '—'}</b></span>`;
     }
-    html += `<span class="ls muted">${this.count} örnek</span>`;
+    html += `<span class="ls muted">${t('plot_samples', { n: this.count })}</span>`;
     this.legendEl.innerHTML = html;
   }
 
