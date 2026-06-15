@@ -57,6 +57,7 @@ export class SerialREPL {
     this.connected = true;
     this._lost = false;
     this._buf = new Uint8Array(0);
+    this._termDec = new TextDecoder(); // terminal passthrough icin akis-bilincli decoder
     this._pump = this._readLoop();
   }
 
@@ -67,7 +68,7 @@ export class SerialREPL {
         if (done) break;
         if (value && value.length) {
           if (this.capturing) this._buf = concat(this._buf, value);
-          else if (this.onData) this.onData(dec.decode(value));
+          else if (this.onData) this.onData(this._termDec.decode(value, { stream: true }));
           else this._buf = concat(this._buf, value);
         }
       }
@@ -149,6 +150,7 @@ export class SerialREPL {
   async _readUntilEmit(tokByte, idleMs, onChunk) {
     let collected = '';
     let deadline = Date.now() + idleMs;
+    const sdec = new TextDecoder(); // akis-bilincli: cok-baytli karakter chunk sinirinda bolunmesin
     while (true) {
       if (this._lost) throw new Error('Baglanti koptu');
       if (Date.now() > deadline) throw new Error('Akış zaman aşımı (' + (idleMs / 1000) + ' sn sessizlik)');
@@ -156,12 +158,15 @@ export class SerialREPL {
       for (let k = 0; k < this._buf.length; k++) if (this._buf[k] === tokByte) { i = k; break; }
       if (i !== -1) {
         const c = this._buf.slice(0, i); this._buf = this._buf.slice(i + 1);
-        if (c.length) { const t = dec.decode(c); collected += t; onChunk(t); }
+        const tx = sdec.decode(c); // son parca: flush (\x04 oncesi tam)
+        if (tx) { collected += tx; onChunk(tx); }
         return collected;
       }
       if (this._buf.length) {
-        const t = dec.decode(this._buf); this._buf = new Uint8Array(0);
-        collected += t; onChunk(t); deadline = Date.now() + idleMs;
+        const tx = sdec.decode(this._buf, { stream: true });
+        this._buf = new Uint8Array(0);
+        if (tx) { collected += tx; onChunk(tx); }
+        deadline = Date.now() + idleMs;
       }
       await sleep(12);
     }
