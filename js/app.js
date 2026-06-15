@@ -11,6 +11,8 @@ import { Wireless } from './wireless.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+// Cihazdan gelen string'leri innerHTML'e gomerken kacis (XSS korumasi).
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const repl = new SerialREPL();
 let cm, term, dfiles, plotter, wireless, currentChip = 'ESP32', lastInfo = null;
 let curFile = null, folderHandle = null;
@@ -74,13 +76,13 @@ async function disconnect() { if (wireless) wireless.stop(); await repl.close();
 function renderInfo(info) {
   if (!info) return;
   $('info').innerHTML = `
-    <div><b>${t('info_chip')}</b><span>${currentChip}</span></div>
-    <div><b>${t('info_model')}</b><span>${info.machine}</span></div>
-    <div><b>${t('info_mpy')}</b><span>${info.release}</span></div>
+    <div><b>${t('info_chip')}</b><span>${esc(currentChip)}</span></div>
+    <div><b>${t('info_model')}</b><span>${esc(info.machine)}</span></div>
+    <div><b>${t('info_mpy')}</b><span>${esc(info.release)}</span></div>
     <div><b>${t('info_freq')}</b><span>${(info.freq / 1e6) | 0} MHz</span></div>
     <div><b>${t('info_flash')}</b><span>${(info.flash / 1048576) | 0} MB</span></div>
     <div><b>${t('info_freeram')}</b><span>${(info.mem_free / 1024) | 0} KB</span></div>
-    <div><b>${t('info_uid')}</b><span>${info.uid}</span></div>`;
+    <div><b>${t('info_uid')}</b><span>${esc(info.uid)}</span></div>`;
 }
 async function refreshInfo() {
   const { stdout, stderr } = await repl.exec(INFO_SCRIPT, 8000);
