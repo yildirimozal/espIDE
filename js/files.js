@@ -44,9 +44,13 @@ export class DeviceFiles {
       row.className = 'node';
       row.dataset.path = full;
       row.dataset.type = it.type;
-      row.innerHTML = `<span class="ic">${iconFor(it.name, it.type)}</span>
-        <span class="nm">${it.name}</span>
-        <span class="sz">${it.type === 'file' ? fmtSize(it.size) : ''}</span>`;
+      // Cihazdan gelen dosya adi (it.name) innerHTML yerine textContent ile
+      // basiliyor -> DOM injection / agac bozulmasi engellenir. iconFor sabit
+      // emoji, boyut sayisaldir; ikisi de guvenli.
+      const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = iconFor(it.name, it.type);
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = it.name;
+      const sz = document.createElement('span'); sz.className = 'sz'; sz.textContent = it.type === 'file' ? fmtSize(it.size) : '';
+      row.append(ic, nm, sz);
       li.appendChild(row);
 
       row.addEventListener('click', async (e) => {
