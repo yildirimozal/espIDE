@@ -56,7 +56,8 @@ Safari ve Firefox desteklenmez. HTTPS veya `localhost` üzerinden sunulur.
 ### Çip veya firmware ekleme
 1. `.bin` dosyasını `firmware/` içine koy.
 2. `js/flash.js` içindeki `FIRMWARE` tablosuna çip → dosya + offset ekle.
-3. `js/boards.js` içine bir pinout şablonu ekle (mevcutları örnek al).
+3. Algılanan çip dizgisini `js/flash.js` içindeki `normalizeChip()` ile bu anahtara eşle — bilinmeyen çipler artık ESP32'ye düşmek yerine reddediliyor, yeni aileyi buraya açıkça eklemen gerekir.
+4. `js/boards.js` içine bir pinout şablonu ekle (mevcutları örnek al); otomatik seçim için kullanılan çip-ailesi algılaması oradaki `chipFromInfo()` içindedir.
 
 ## PWA / çevrimdışı / güncelleme
 
@@ -97,6 +98,7 @@ esp32-web-ide/
 │   ├── serial.js       # Web Serial + raw / raw-paste REPL + dosya sistemi + akış
 │   ├── flash.js        # firmware yükleme (esptool-js)
 │   ├── boards.js       # pinout şablonları + çip algılama
+│   ├── pinout.js       # tıklanabilir pin diyagramını çizer
 │   ├── terminal.js     # etkileşimli terminal (xterm.js)
 │   ├── files.js        # cihaz dosya ağacı + yerel klasör senkronu
 │   ├── plotter.js      # canlı plotter + CSV export

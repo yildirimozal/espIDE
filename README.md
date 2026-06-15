@@ -57,7 +57,8 @@ also switch templates manually.
 ### Adding a chip or firmware
 1. Drop the `.bin` into `firmware/`.
 2. Add a chip → file + offset entry to `FIRMWARE` in `js/flash.js`.
-3. Add a pinout template to `js/boards.js` (use the existing ones as a reference).
+3. Map the detected chip string to that key in `normalizeChip()` (`js/flash.js`) — unknown chips are rejected rather than defaulting to ESP32, so a new family must be added here explicitly.
+4. Add a pinout template to `js/boards.js` (use the existing ones as a reference); the chip-family detection used for auto-selection lives in `chipFromInfo()` there.
 
 ## PWA / offline / updates
 
@@ -98,6 +99,7 @@ esp32-web-ide/
 │   ├── serial.js       # Web Serial + raw / raw-paste REPL + file system + streaming
 │   ├── flash.js        # firmware flashing (esptool-js)
 │   ├── boards.js       # pinout templates + chip detection
+│   ├── pinout.js       # renders the clickable pin diagram
 │   ├── terminal.js     # interactive terminal (xterm.js)
 │   ├── files.js        # device file tree + local folder sync
 │   ├── plotter.js      # live plotter + CSV export
