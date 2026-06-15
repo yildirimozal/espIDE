@@ -38,6 +38,11 @@ const DICT = {
     fs_count_pull: '{n} dosya alınacak…\n', fs_pull_done: '✓ Karttan alma tamam.\n',
     fs_no_fsa: 'Tarayıcı klasör erişimini desteklemiyor (Chrome/Edge gerekir).',
     plot_waiting: 'Veri bekleniyor — sayı yazdıran bir kod çalıştır (örn. print sıcaklık).', plot_samples: '{n} örnek',
+    tab_wireless: 'Telsiz', w_scan: 'Tara', w_auto: 'otomatik', w_scanning: 'taranıyor…',
+    w_no_results: 'sonuç yok', w_not_connected: 'Önce karta bağlan.', w_ch_usage: 'Kanal yoğunluğu',
+    w_found: '{n} bulundu', col_ssid: 'Ağ', col_signal: 'Sinyal', col_channel: 'Kanal', col_security: 'Güvenlik',
+    col_name: 'Ad', col_mac: 'MAC', w_hidden: '‹gizli›', w_noname: '‹adsız›',
+    w_ble_note: 'Klasik Bluetooth desteklenmez — yalnızca BLE (Bluetooth Low Energy).',
     ex_blink: 'Blink', ex_boardinfo: 'Kart bilgisi', ex_wifi: 'WiFi tara', ex_i2c: 'I2C tara',
   },
   en: {
@@ -76,6 +81,11 @@ const DICT = {
     fs_count_pull: '{n} files to pull…\n', fs_pull_done: '✓ Pull complete.\n',
     fs_no_fsa: 'Browser does not support folder access (Chrome/Edge required).',
     plot_waiting: 'Waiting for data — run code that prints numbers (e.g. print a temperature).', plot_samples: '{n} samples',
+    tab_wireless: 'Wireless', w_scan: 'Scan', w_auto: 'auto', w_scanning: 'scanning…',
+    w_no_results: 'no results', w_not_connected: 'Connect to a board first.', w_ch_usage: 'Channel usage',
+    w_found: '{n} found', col_ssid: 'Network', col_signal: 'Signal', col_channel: 'Ch', col_security: 'Security',
+    col_name: 'Name', col_mac: 'MAC', w_hidden: '‹hidden›', w_noname: '‹no name›',
+    w_ble_note: 'Classic Bluetooth not supported — BLE (Bluetooth Low Energy) only.',
     ex_blink: 'Blink', ex_boardinfo: 'Board info', ex_wifi: 'WiFi scan', ex_i2c: 'I2C scan',
   },
 };

@@ -101,6 +101,7 @@
           <button class="tab active" data-bottom="terminal" data-i18n="tab_terminal">Terminal</button>
           <button class="tab" data-bottom="output" data-i18n="tab_output">Çıktı</button>
           <button class="tab" data-bottom="plotter"><span data-i18n="tab_plotter">Plotter</span> 📈</button>
+          <button class="tab" data-bottom="wireless"><span data-i18n="tab_wireless">Telsiz</span> 📡</button>
         </div>
         <div class="panel-body">
           <div id="terminal" class="terminal active"></div>
@@ -113,6 +114,16 @@
               <button id="plot-csv" class="btn xs ghost" data-i18n="plot_csv">⭳ CSV indir</button>
             </div>
             <canvas id="plot-canvas" class="plot-canvas"></canvas>
+          </div>
+          <div id="wireless" class="wireless">
+            <div class="wl-bar">
+              <button class="wl-sub active" data-wl="wifi">📶 WiFi</button>
+              <button class="wl-sub" data-wl="ble">🔵 BLE</button>
+              <span class="spacer"></span>
+              <label class="inline"><input type="checkbox" id="wl-auto"> <span data-i18n="w_auto">otomatik</span></label>
+              <button id="wl-scan" class="btn xs ghost" data-i18n="w_scan">Tara</button>
+            </div>
+            <div id="wl-results" class="wl-results"><div class="muted small" data-i18n="w_not_connected">Önce karta bağlan.</div></div>
           </div>
         </div>
       </div>

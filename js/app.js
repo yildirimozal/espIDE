@@ -7,11 +7,12 @@ import { initEditor } from './editor.js';
 import { initTerminal } from './terminal.js';
 import { DeviceFiles, pickLocalFolder, pushToDevice, pullFromDevice } from './files.js';
 import { Plotter } from './plotter.js';
+import { Wireless } from './wireless.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const repl = new SerialREPL();
-let cm, term, dfiles, plotter, currentChip = 'ESP32', lastInfo = null;
+let cm, term, dfiles, plotter, wireless, currentChip = 'ESP32', lastInfo = null;
 let curFile = null, folderHandle = null;
 
 // Ornek kodlar (id -> kod). Etiket t('ex_'+id) ile.
@@ -38,8 +39,10 @@ function bottomTab(name) {
   $('terminal').classList.toggle('active', name === 'terminal');
   $('output').classList.toggle('active', name === 'output');
   $('plotter').classList.toggle('active', name === 'plotter');
+  $('wireless').classList.toggle('active', name === 'wireless');
   if (name === 'terminal' && term) term.fit();
   if (name === 'plotter' && plotter) plotter.resize();
+  if (name === 'wireless' && wireless) wireless.scan();
 }
 
 // --- Baglan ---
@@ -65,7 +68,7 @@ async function connect() {
     setConnectedUI(false);
   }
 }
-async function disconnect() { await repl.close(); repl.port = null; setConnectedUI(false); setStatus(t('st_disconnected')); out(t('msg_disconnected'), 'sys'); }
+async function disconnect() { if (wireless) wireless.stop(); await repl.close(); repl.port = null; setConnectedUI(false); setStatus(t('st_disconnected')); out(t('msg_disconnected'), 'sys'); }
 
 // --- Kart bilgisi + pinout ---
 function renderInfo(info) {
@@ -196,6 +199,7 @@ function changeLang(l) {
   renderInfo(lastInfo);
   drawBoard($('board-select').value || BOARDS[0].id);
   if (repl.connected) statusConnected(); else setStatus(t('st_disconnected'));
+  if (wireless && $('wireless').classList.contains('active')) wireless.scan();
 }
 
 // --- Baslat ---
@@ -205,6 +209,7 @@ function init() {
   catch (e) { console.error('Terminal:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">xterm.js?</div>'; }
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
+  wireless = new Wireless(repl, { results: $('wl-results') });
 
   applyI18n();
   $('lang').value = getLang();
@@ -230,6 +235,12 @@ function init() {
   $('s-pick').onclick = pickFolder; $('s-push').onclick = pushFolder; $('s-pull').onclick = pullFolder;
   $('plot-clear').onclick = () => plotter.clear();
   $('plot-csv').onclick = () => plotter.downloadCSV();
+  document.querySelectorAll('.wl-sub').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.wl-sub').forEach((x) => x.classList.toggle('active', x === b));
+    wireless.setMode(b.dataset.wl);
+  }));
+  $('wl-scan').onclick = () => wireless.scan();
+  $('wl-auto').addEventListener('change', (e) => wireless.setAuto(e.target.checked));
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);

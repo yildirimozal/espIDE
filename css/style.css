@@ -197,6 +197,32 @@ ul.tree ul.tree { padding-left: 14px; border-left: 1px dotted var(--line); margi
 .plot-legend .ls b { color: var(--accent); }
 .plot-canvas { flex: 1; width: 100%; min-height: 0; display: block; }
 
+/* Telsiz (Wireless) */
+#wireless { position: absolute; inset: 0; display: none; flex-direction: column; background: #010409; }
+#wireless.active { display: flex; }
+.wl-bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.wl-sub { background: var(--bg3); border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-weight: 600; }
+.wl-sub.active { color: #fff; border-color: var(--accent); background: #1f6feb33; }
+.wl-results { flex: 1; min-height: 0; overflow: auto; padding: 8px 10px; }
+.wl-count { font-size: 11px; color: var(--muted); margin: 6px 2px; }
+.wl-note { margin-bottom: 4px; }
+.wl-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.wl-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; }
+.wl-table td { padding: 5px 6px; border-bottom: 1px solid #161b22; vertical-align: middle; }
+.wl-table td.nm { font-weight: 600; }
+.wl-table td .sub { font-size: 10px; color: var(--muted); font-weight: 400; }
+.wl-table td.mac, .wl-table td.ch { font-family: "SF Mono", Menlo, monospace; color: var(--muted); }
+.rssi { display: inline-block; width: 70px; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; vertical-align: middle; }
+.rssi-fill { display: block; height: 100%; }
+.rssi-n { font-size: 10px; color: var(--muted); margin-left: 6px; font-family: monospace; }
+.wl-chart { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.wl-chart-title { font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+.wl-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
+.wl-cbar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.wl-cbar span { width: 100%; min-height: 2px; border-radius: 2px 2px 0 0; }
+.wl-cbar b { font-size: 9px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+.wl-cbar b.hot { color: var(--accent); font-weight: 700; }
+
 @media (max-width: 800px) {
   main { flex-direction: column; }
   .sidebar { width: 100%; max-height: 45%; border-right: 0; border-bottom: 1px solid var(--line); }
