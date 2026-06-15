@@ -12,13 +12,23 @@ export const FIRMWARE = {
   'ESP32-C3': { file: 'firmware/ESP32_GENERIC_C3-v1.28.0.bin', offset: 0x0,    ad: 'ESP32-C3' },
 };
 
+// Cip aciklamasini (esploader.main() insan-okunur string dondurur) bilinen bir
+// aileye eslestirir. Beyaz liste: eslesmeyen cip null doner ve !fw guard'i ile
+// reddedilir -> yanlis imaj asla yazilmaz. (Once 'ESP32' donduruluyordu; C2/H2/
+// P4/ESP8266 gibi ayirt edici token'i olmayan aileler klasik ESP32 imajini
+// yiyordu.)
 function normalizeChip(desc) {
   const d = (desc || '').toUpperCase();
+  if (d.includes('ESP8266') || d.includes('ESP8285')) return 'ESP8266';
   if (d.includes('S3')) return 'ESP32-S3';
-  if (d.includes('C3')) return 'ESP32-C3';
   if (d.includes('S2')) return 'ESP32-S2';
+  if (d.includes('C2')) return 'ESP32-C2';
+  if (d.includes('C3')) return 'ESP32-C3';
   if (d.includes('C6')) return 'ESP32-C6';
-  return 'ESP32';
+  if (d.includes('H2')) return 'ESP32-H2';
+  if (d.includes('P4')) return 'ESP32-P4';
+  if (d.includes('ESP32')) return 'ESP32'; // klasik ESP32 yalnizca pozitif eslesme
+  return null;                             // bilinmeyen -> reddedilir
 }
 
 async function fetchBinaryString(url) {
@@ -54,11 +64,11 @@ export async function flashFirmware(port, { onLog = () => {}, onProgress = () =>
     onLog('Karta baglaniliyor (bootloader)...\n');
     const chipDesc = await esploader.main();          // cipe baglanir, aciklama dondurur
     const chip = normalizeChip(chipDesc);
-    onLog('Tespit edilen cip: ' + chipDesc + ' -> ' + chip + '\n');
+    onLog('Tespit edilen cip: ' + chipDesc + (chip ? ' -> ' + chip : ' (taninmadi)') + '\n');
 
-    const fw = FIRMWARE[chip];
+    const fw = chip && FIRMWARE[chip];
     if (!fw) {
-      throw new Error('Bu cip icin pakette firmware yok: ' + chip +
+      throw new Error('Bu cip icin pakette firmware yok: ' + (chip || chipDesc) +
         '. firmware/ klasorune uygun .bin ekleyip flash.js icindeki FIRMWARE listesini guncelle.');
     }
 
