@@ -20,6 +20,7 @@ bulut yok.** Her şey Web Serial API ile yerelde çalışır.
 - **Etkileşimli terminal** (xterm.js) — canlı ANSI REPL; `input()` çalışır.
 - **Canlı plotter** — karttan akan sayıları gerçek zamanlı çizer (çoklu seri; `temp:23.5 hum:40`, CSV veya boşluk), zaman damgalı **CSV export**.
 - **Telsiz monitörü** — yakındaki **WiFi** ağlarını (SSID, sinyal, kanal, güvenlik) kanal-yoğunluğu grafiğiyle ve **BLE** cihazlarını (ad, MAC, sinyal) tarar; isteğe bağlı otomatik yenileme.
+- **CSI görselleştirici** — canlı WiFi **Channel State Information**: subcarrier başına genlik grafiği, kayan waterfall ısı haritası ve hareket metriği (kamerasız WiFi sensing). CSI firmware'i (ESP-IDF tabanlı) gerektirir; özel `.bin` yükleyici dahili.
 - **Akıllı pinout** — çipi tanır ve uygun pin diyagramını gösterir (ESP32 / S3 / C3).
 - **Kart bilgisi** — çip, frekans, flash, boş RAM, benzersiz kimlik, flash kullanımı.
 - **Kod editörü** — Python söz dizimi renklendirme ve örnek kod kütüphanesi.

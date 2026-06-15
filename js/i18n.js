@@ -45,6 +45,9 @@ const DICT = {
     w_found: '{n} bulundu', col_ssid: 'Ağ', col_signal: 'Sinyal', col_channel: 'Kanal', col_security: 'Güvenlik',
     col_name: 'Ad', col_mac: 'MAC', w_hidden: '‹gizli›', w_noname: '‹adsız›',
     w_ble_note: 'Klasik Bluetooth desteklenmez — yalnızca BLE (Bluetooth Low Energy).',
+    tab_csi: 'CSI', csi_motion: 'Hareket', csi_stats: '{n} paket · {sub} subcarrier · {rate}/sn',
+    csi_waiting: 'CSI verisi bekleniyor — CSI firmware yüklü bir kart bağlayın.',
+    csi_flashbin: 'CSI firmware (.bin)', csi_note: 'CSI, ESP-IDF tabanlı bir CSI firmware gerektirir (MicroPython değil). .bin yükleyip offset belirtin.',
     ex_blink: 'Blink', ex_boardinfo: 'Kart bilgisi', ex_wifi: 'WiFi tara', ex_i2c: 'I2C tara',
   },
   en: {
@@ -90,6 +93,9 @@ const DICT = {
     w_found: '{n} found', col_ssid: 'Network', col_signal: 'Signal', col_channel: 'Ch', col_security: 'Security',
     col_name: 'Name', col_mac: 'MAC', w_hidden: '‹hidden›', w_noname: '‹no name›',
     w_ble_note: 'Classic Bluetooth not supported — BLE (Bluetooth Low Energy) only.',
+    tab_csi: 'CSI', csi_motion: 'Motion', csi_stats: '{n} packets · {sub} subcarriers · {rate}/s',
+    csi_waiting: 'Waiting for CSI data — connect a board flashed with CSI firmware.',
+    csi_flashbin: 'CSI firmware (.bin)', csi_note: 'CSI requires ESP-IDF based CSI firmware (not MicroPython). Upload a .bin and set the offset.',
     ex_blink: 'Blink', ex_boardinfo: 'Board info', ex_wifi: 'WiFi scan', ex_i2c: 'I2C scan',
   },
 };

@@ -223,6 +223,19 @@ ul.tree ul.tree { padding-left: 14px; border-left: 1px dotted var(--line); margi
 .wl-cbar b { font-size: 9px; color: var(--muted); margin-top: 2px; font-weight: 400; }
 .wl-cbar b.hot { color: var(--accent); font-weight: 700; }
 
+/* CSI */
+#csi { position: absolute; inset: 0; display: none; flex-direction: column; background: #010409; }
+#csi.active { display: flex; }
+.csi-bar { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.csi-motion { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.csi-dot { width: 11px; height: 11px; border-radius: 50%; background: #233; display: inline-block; }
+.csi-dot.on { background: var(--red); box-shadow: 0 0 10px var(--red); }
+.mini-input { background: var(--bg3); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; font-size: 12px; width: 64px; font-family: monospace; }
+.csi-amp { width: 100%; height: 28%; min-height: 70px; flex: 0 0 auto; display: block; background: #010409; border-bottom: 1px solid var(--line); }
+.csi-wf-wrap { flex: 1; min-height: 0; position: relative; }
+.csi-wf { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.csi-note { padding: 5px 10px; flex: 0 0 auto; border-top: 1px solid var(--line); }
+
 @media (max-width: 800px) {
   main { flex-direction: column; }
   .sidebar { width: 100%; max-height: 45%; border-right: 0; border-bottom: 1px solid var(--line); }

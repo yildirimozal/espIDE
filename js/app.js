@@ -1,6 +1,6 @@
 // app.js — Pro v2 orkestra: editor + terminal + dosya agaci + senkron + kart + plotter + i18n.
 import { SerialREPL } from './serial.js';
-import { flashFirmware } from './flash.js';
+import { flashFirmware, flashCustom } from './flash.js';
 import { BOARDS, boardsForChip, getBoard, INFO_SCRIPT, chipFromInfo } from './boards.js';
 import { renderPinout } from './pinout.js';
 import { initEditor } from './editor.js';
@@ -8,14 +8,16 @@ import { initTerminal } from './terminal.js';
 import { DeviceFiles, pickLocalFolder, pushToDevice, pullFromDevice } from './files.js';
 import { Plotter } from './plotter.js';
 import { Wireless } from './wireless.js';
+import { CSI } from './csi.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 // Cihazdan gelen string'leri innerHTML'e gomerken kacis (XSS korumasi).
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const repl = new SerialREPL();
-let cm, term, dfiles, plotter, wireless, currentChip = 'ESP32', lastInfo = null;
+let cm, term, dfiles, plotter, wireless, csi, currentChip = 'ESP32', lastInfo = null;
 let curFile = null, folderHandle = null;
+const csiTap = (txt) => { if (csi) csi.feed(txt); };
 
 // Ornek kodlar (id -> kod). Etiket t('ex_'+id) ile.
 const EXAMPLES = {
@@ -47,9 +49,12 @@ function bottomTab(name) {
   $('output').classList.toggle('active', name === 'output');
   $('plotter').classList.toggle('active', name === 'plotter');
   $('wireless').classList.toggle('active', name === 'wireless');
+  $('csi').classList.toggle('active', name === 'csi');
   if (name === 'terminal' && term) term.fit();
   if (name === 'plotter' && plotter) plotter.resize();
   if (name === 'wireless' && wireless) wireless.scan();
+  repl.removeTap(csiTap);                                  // CSI akışını yalnızca CSI sekmesindeyken dinle
+  if (name === 'csi' && csi) { repl.addTap(csiTap); csi.resize(); }
 }
 
 // --- Baglan ---
@@ -63,11 +68,18 @@ async function connect() {
     setConnectedUI(true);
     out(t('msg_connected'), 'sys');
     setStatus(t('st_reading'), 'busy');
-    await refreshInfo();
-    await refreshFiles();
-    await repl.terminalReady();
-    if (term) term.write(t('msg_repl_ready'));
-    statusConnected();
+    try {
+      await refreshInfo();
+      await refreshFiles();
+      await repl.terminalReady();
+      if (term) term.write(t('msg_repl_ready'));
+      statusConnected();
+    } catch (probe) {
+      // MicroPython yanıt vermedi (ör. CSI / C / ESP-IDF firmware) -> ham seri modunda kal.
+      // Terminal ve CSI gibi ham-akış araçları yine çalışır.
+      out('MicroPython yanıtı yok — ham seri modu (terminal / CSI çalışır).\n', 'sys');
+      setStatus('ham seri', 'ok');
+    }
   } catch (e) {
     setStatus(t('st_connfail'), 'err'); out(t('msg_conn_error', { e: e.message }), 'err');
     out(t('msg_flash_hint'), 'sys');
@@ -182,6 +194,28 @@ async function flash() {
   finally { setTimeout(() => $('flash-progress').classList.add('hidden'), 1500); }
 }
 
+// --- CSI firmware (özel .bin) yükleme ---
+async function flashCsi(e) {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const offset = parseInt($('csi-offset').value, 16) || 0;
+  if (!navigator.serial) return alert(t('msg_need_serial'));
+  if (!confirm(file.name + ' → 0x' + offset.toString(16) + ' ?')) return;
+  $('flash-progress').classList.remove('hidden'); bottomTab('output');
+  try {
+    if (repl.connected) await repl.close();
+    if (!repl.port) await repl.requestPort();
+    setStatus(t('st_firmware'), 'busy');
+    const res = await flashCustom(repl.port, file, offset, {
+      onLog: (txt) => out(txt),
+      onProgress: (p) => { $('flash-bar').style.width = ((p * 100) | 0) + '%'; },
+    });
+    out('\n✅ ' + file.name + ' (' + res.chipDesc + ')\n', 'sys');
+    out('CSI firmware yüklendi. "Bağlan" → CSI sekmesinden akışı izle.\n', 'sys');
+    setStatus(t('st_disconnected'));
+  } catch (err) { out(t('flash_error', { e: err.message }), 'err'); setStatus(t('st_error'), 'err'); }
+  finally { setTimeout(() => $('flash-progress').classList.add('hidden'), 1500); }
+}
+
 // --- Yerel senkron ---
 async function pickFolder() {
   try { folderHandle = await pickLocalFolder(); $('s-folder').textContent = '📂 ' + folderHandle.name; $('s-push').disabled = $('s-pull').disabled = false; }
@@ -222,6 +256,7 @@ function init() {
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
   wireless = new Wireless(repl, { results: $('wl-results'), auto: $('wl-auto') });
+  csi = new CSI({ amp: $('csi-amp'), wf: $('csi-wf'), motion: $('csi-motion'), stats: $('csi-stats') });
 
   applyI18n();
   $('lang').value = getLang();
@@ -253,6 +288,9 @@ function init() {
   }));
   $('wl-scan').onclick = () => wireless.scan();
   $('wl-auto').addEventListener('change', (e) => wireless.setAuto(e.target.checked));
+  $('csi-clear').onclick = () => csi.clear();
+  $('csi-flash').onclick = () => $('csi-file').click();
+  $('csi-file').addEventListener('change', flashCsi);
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);

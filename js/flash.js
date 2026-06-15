@@ -93,6 +93,31 @@ export async function flashFirmware(port, { onLog = () => {}, onProgress = () =>
   }
 }
 
+// Kullanici .bin'ini secilen offset'e yaz (CSI gibi C/ESP-IDF firmware'leri icin).
+// Tam birlestirilmis (merged) imaj icin offset 0x0 onerilir.
+export async function flashCustom(port, file, offset, { onLog = () => {}, onProgress = () => {} } = {}) {
+  const { ESPLoader, Transport } = await import(ESPTOOL_URL);
+  const terminal = { clean() {}, writeLine(d) { onLog(d + '\n'); }, write(d) { onLog(d); } };
+  const transport = new Transport(port, false);
+  const esploader = new ESPLoader({ transport, baudrate: 460800, terminal });
+  try {
+    const chipDesc = await esploader.main();
+    onLog('Cip: ' + chipDesc + '\n');
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let data = ''; const CH = 0x8000;
+    for (let i = 0; i < bytes.length; i += CH) data += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    onLog('Yaziliyor: ' + file.name + ' -> 0x' + offset.toString(16) + ' (' + ((bytes.length / 1024) | 0) + ' KB)\n');
+    await esploader.writeFlash({
+      fileArray: [{ data, address: offset }],
+      flashSize: 'keep', eraseAll: false, compress: true,
+      reportProgress: (i, w, total) => onProgress(w / total),
+    });
+    onLog('\nYazma tamam. Resetleniyor...\n');
+    await safeReset(esploader, transport); onProgress(1);
+    return { chipDesc };
+  } finally { try { await transport.disconnect(); } catch (e) {} }
+}
+
 async function safeReset(esploader, transport) {
   try {
     if (esploader.hardReset) { await esploader.hardReset(); return; }

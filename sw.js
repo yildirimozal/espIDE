@@ -1,13 +1,13 @@
 // sw.js — Service Worker: cevrimdisi destek + cache-busting.
 // GUNCELLEME YAYINLARKEN: APP_VERSION'i artir -> eski cache silinir, yeni varliklar cekilir.
-const APP_VERSION = 'v1.3.0';
+const APP_VERSION = 'v1.4.0';
 const CACHE = 'esp32ide-' + APP_VERSION;
 
 // Uygulama kabugu + bagimliliklar + firmware (cevrimdisi flashing icin)
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/serial.js', './js/flash.js', './js/boards.js',
-  './js/pinout.js', './js/editor.js', './js/terminal.js', './js/files.js', './js/plotter.js', './js/i18n.js', './js/wireless.js',
+  './js/pinout.js', './js/editor.js', './js/terminal.js', './js/files.js', './js/plotter.js', './js/i18n.js', './js/wireless.js', './js/csi.js',
   './vendor/codemirror/codemirror.min.js', './vendor/codemirror/codemirror.min.css',
   './vendor/codemirror/python.min.js', './vendor/codemirror/material-darker.min.css',
   './vendor/codemirror/matchbrackets.min.js',

@@ -102,6 +102,7 @@
           <button class="tab" data-bottom="output" data-i18n="tab_output">Çıktı</button>
           <button class="tab" data-bottom="plotter"><span data-i18n="tab_plotter">Plotter</span> 📈</button>
           <button class="tab" data-bottom="wireless"><span data-i18n="tab_wireless">Telsiz</span> 📡</button>
+          <button class="tab" data-bottom="csi"><span data-i18n="tab_csi">CSI</span> 🌊</button>
         </div>
         <div class="panel-body">
           <div id="terminal" class="terminal active"></div>
@@ -124,6 +125,22 @@
               <button id="wl-scan" class="btn xs ghost" data-i18n="w_scan">Tara</button>
             </div>
             <div id="wl-results" class="wl-results"><div class="muted small" data-i18n="w_not_connected">Önce karta bağlan.</div></div>
+          </div>
+          <div id="csi" class="csi">
+            <div class="csi-bar">
+              <span id="csi-motion" class="csi-motion"></span>
+              <span id="csi-stats" class="muted small"></span>
+              <span class="spacer"></span>
+              <button id="csi-flash" class="btn xs ghost" data-i18n="csi_flashbin">CSI firmware (.bin)</button>
+              <label class="inline">off
+                <input id="csi-offset" class="mini-input" value="0x0" size="6">
+              </label>
+              <button id="csi-clear" class="btn xs ghost" data-i18n="plot_clear">🧹 Temizle</button>
+            </div>
+            <canvas id="csi-amp" class="csi-amp"></canvas>
+            <div class="csi-wf-wrap"><canvas id="csi-wf" class="csi-wf"></canvas></div>
+            <div class="csi-note muted small" data-i18n="csi_note">CSI, ESP-IDF tabanlı CSI firmware'i gerektirir (MicroPython değil).</div>
+            <input type="file" id="csi-file" accept=".bin" hidden>
           </div>
         </div>
       </div>

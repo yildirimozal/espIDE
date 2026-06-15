@@ -44,7 +44,12 @@ export class SerialREPL {
     this.onDisconnect = null;   // beklenmedik kopma
     this.useRawPaste = true;
     this._chain = Promise.resolve(); // exec sira kilidi
+    this._taps = new Set();     // ham akis dinleyicileri (CSI gibi REPL-disi firmware'ler)
   }
+
+  // Terminal disinda ham seri akisini dinlemek icin (capturing degilken beslenir)
+  addTap(fn) { this._taps.add(fn); }
+  removeTap(fn) { this._taps.delete(fn); }
 
   async requestPort() { this.port = await navigator.serial.requestPort(); return this.port; }
 
@@ -67,9 +72,13 @@ export class SerialREPL {
         const { value, done } = await this.reader.read();
         if (done) break;
         if (value && value.length) {
-          if (this.capturing) this._buf = concat(this._buf, value);
-          else if (this.onData) this.onData(this._termDec.decode(value, { stream: true }));
-          else this._buf = concat(this._buf, value);
+          if (this.capturing) { this._buf = concat(this._buf, value); }
+          else {
+            const txt = this._termDec.decode(value, { stream: true });
+            if (this.onData) this.onData(txt);
+            if (this._taps.size) for (const fn of this._taps) { try { fn(txt); } catch (e) {} }
+            if (!this.onData && !this._taps.size) this._buf = concat(this._buf, value);
+          }
         }
       }
     } catch (e) { /* iptal/kopma */ }
