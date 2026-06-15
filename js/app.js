@@ -26,8 +26,13 @@ const EXAMPLES = {
 };
 
 function out(text, cls = '') {
+  const o = $('output');
   const s = document.createElement('span'); if (cls) s.className = cls; s.textContent = text;
-  $('output').appendChild(s); $('output').scrollTop = $('output').scrollHeight;
+  o.appendChild(s);
+  // Sinirsiz DOM buyumesini engelle: en eski span'leri at.
+  const MAX = 4000;
+  while (o.childElementCount > MAX) o.removeChild(o.firstChild);
+  o.scrollTop = o.scrollHeight;
 }
 function statusConnected() { setStatus(t('st_connected', { chip: currentChip }), 'ok'); }
 function setStatus(text, st) { $('status-text').textContent = text; $('status-dot').className = 'dot ' + (st || ''); }
