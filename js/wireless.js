@@ -54,6 +54,7 @@ export class Wireless {
   constructor(repl, els) {
     this.repl = repl;
     this.results = els.results;   // #wl-results
+    this.autoBox = els.auto || null;  // #wl-auto (durumu UI ile esitlemek icin)
     this.mode = 'wifi';
     this.busy = false;
     this.auto = false;
@@ -68,7 +69,11 @@ export class Wireless {
     if (on) this.timer = setInterval(() => this.scan(), this.mode === 'ble' ? 6000 : 4500);
   }
 
-  stop() { this.auto = false; if (this.timer) { clearInterval(this.timer); this.timer = null; } }
+  stop() {
+    this.auto = false;
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.autoBox) this.autoBox.checked = false;   // UI'yi durumla esitle
+  }
 
   async scan() {
     if (!this.repl.connected) { this.results.innerHTML = `<div class="muted small">${t('w_not_connected')}</div>`; return; }
@@ -104,7 +109,7 @@ export class Wireless {
       const [ssid, mac, channel, rssi, auth] = n;
       const secure = auth > 0;
       return `<tr>
-        <td class="nm">${ssid ? esc(ssid) : '<i class="muted">' + t('w_hidden') + '</i>'}<div class="sub">${mac}</div></td>
+        <td class="nm">${ssid ? esc(ssid) : '<i class="muted">' + t('w_hidden') + '</i>'}<div class="sub">${esc(mac)}</div></td>
         <td class="sig">${bar(rssi)}</td>
         <td class="ch">${channel}</td>
         <td class="sec">${secure ? '🔒' : '🔓'} ${authLabel(auth)}</td>
@@ -124,7 +129,7 @@ export class Wireless {
       const [name, mac, rssi] = d;
       return `<tr>
         <td class="nm">${name ? esc(name) : '<i class="muted">' + t('w_noname') + '</i>'}</td>
-        <td class="mac">${mac}</td>
+        <td class="mac">${esc(mac)}</td>
         <td class="sig">${bar(rssi)}</td>
       </tr>`;
     }).join('');

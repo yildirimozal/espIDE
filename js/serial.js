@@ -35,6 +35,7 @@ export class SerialREPL {
     this.reader = null;
     this.writer = null;
     this.connected = false;
+    this._lost = false;         // baglanti beklenmedik koptu mu (bekleyen op'lari hemen iptal et)
     this.baud = 115200;
     this._buf = new Uint8Array(0);
     this._pump = null;
@@ -54,7 +55,9 @@ export class SerialREPL {
     this.writer = this.port.writable.getWriter();
     this.reader = this.port.readable.getReader();
     this.connected = true;
+    this._lost = false;
     this._buf = new Uint8Array(0);
+    this._termDec = new TextDecoder(); // terminal passthrough icin akis-bilincli decoder
     this._pump = this._readLoop();
   }
 
@@ -65,12 +68,17 @@ export class SerialREPL {
         if (done) break;
         if (value && value.length) {
           if (this.capturing) this._buf = concat(this._buf, value);
-          else if (this.onData) this.onData(dec.decode(value));
+          else if (this.onData) this.onData(this._termDec.decode(value, { stream: true }));
           else this._buf = concat(this._buf, value);
         }
       }
     } catch (e) { /* iptal/kopma */ }
-    if (this.connected && this.onDisconnect) { this.connected = false; this.onDisconnect(); }
+    if (this.connected) {
+      // Beklenmedik kopma: bekleyen protokol cagrilarini hemen iptal et.
+      this.connected = false;
+      this._lost = true;
+      if (this.onDisconnect) this.onDisconnect();
+    }
   }
 
   async close() {
@@ -89,6 +97,7 @@ export class SerialREPL {
     const tok = enc.encode(token);
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
+      if (this._lost) throw new Error('Baglanti koptu');
       const idx = indexOf(this._buf, tok);
       if (idx !== -1) { const r = this._buf.slice(0, idx + tok.length); this._buf = this._buf.slice(idx + tok.length); return r; }
       await sleep(6);
@@ -99,6 +108,7 @@ export class SerialREPL {
   async _readN(n, timeoutMs = 5000) {
     const deadline = Date.now() + timeoutMs;
     while (this._buf.length < n) {
+      if (this._lost) throw new Error('Baglanti koptu');
       if (Date.now() > deadline) throw new Error('Zaman asimi (' + n + ' byte beklendi)');
       await sleep(4);
     }
@@ -140,18 +150,23 @@ export class SerialREPL {
   async _readUntilEmit(tokByte, idleMs, onChunk) {
     let collected = '';
     let deadline = Date.now() + idleMs;
+    const sdec = new TextDecoder(); // akis-bilincli: cok-baytli karakter chunk sinirinda bolunmesin
     while (true) {
+      if (this._lost) throw new Error('Baglanti koptu');
       if (Date.now() > deadline) throw new Error('Akış zaman aşımı (' + (idleMs / 1000) + ' sn sessizlik)');
       let i = -1;
       for (let k = 0; k < this._buf.length; k++) if (this._buf[k] === tokByte) { i = k; break; }
       if (i !== -1) {
         const c = this._buf.slice(0, i); this._buf = this._buf.slice(i + 1);
-        if (c.length) { const t = dec.decode(c); collected += t; onChunk(t); }
+        const tx = sdec.decode(c); // son parca: flush (\x04 oncesi tam)
+        if (tx) { collected += tx; onChunk(tx); }
         return collected;
       }
       if (this._buf.length) {
-        const t = dec.decode(this._buf); this._buf = new Uint8Array(0);
-        collected += t; onChunk(t); deadline = Date.now() + idleMs;
+        const tx = sdec.decode(this._buf, { stream: true });
+        this._buf = new Uint8Array(0);
+        if (tx) { collected += tx; onChunk(tx); }
+        deadline = Date.now() + idleMs;
       }
       await sleep(12);
     }
@@ -254,11 +269,23 @@ export class SerialREPL {
     const bytes = typeof data === 'string' ? enc.encode(data) : data;
     const b64 = b64encode(bytes);
     const CH = 2048; // base64 parca
-    let code = 'import ubinascii\nf=open(' + JSON.stringify(path) + ',"wb")\n';
+    const tmp = path + '.tmp~';
+    // Atomik yazma: once .tmp~'a yaz, tam basariliysa os.rename ile hedefin
+    // uzerine al. open(path,"wb") hedefi aninda sifirladigindan, yazma sirasinda
+    // timeout/reset/ENOSPC olursa orijinal kaybolurdu. rename metadata islemi
+    // oldugu icin ayni fs'te etkin atomiktir; FAT'ta hedef varsa hata verdiginden
+    // once os.remove ile siliniyor.
+    let code = 'import ubinascii,os\n' +
+      'tp=' + JSON.stringify(tmp) + '\n' +
+      'dp=' + JSON.stringify(path) + '\n' +
+      'f=open(tp,"wb")\n';
     for (let i = 0; i < b64.length; i += CH) {
       code += 'f.write(ubinascii.a2b_base64(' + JSON.stringify(b64.slice(i, i + CH)) + '))\n';
     }
-    code += 'f.close()\nprint("OK")\n';
+    code += 'f.close()\n' +
+      'try:\n os.remove(dp)\nexcept OSError:\n pass\n' +
+      'os.rename(tp,dp)\n' +
+      'print("OK")\n';
     const out = await this.evalPy(code, 30000);
     if (!out.includes('OK')) throw new Error('Yazma dogrulanamadi');
   }

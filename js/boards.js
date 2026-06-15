@@ -195,7 +195,7 @@ export function getBoard(id) {
 // Karttan bilgi okumak icin calistirilan MicroPython betigi.
 // Tek JSON satiri dondurur.
 export const INFO_SCRIPT = `
-import os, gc, sys
+import os, gc, sys, ujson
 try:
     import machine
     freq = machine.freq()
@@ -208,7 +208,7 @@ try:
 except Exception:
     flash = 0
 u = os.uname()
-print('{"sysname":"%s","machine":"%s","release":"%s","version":"%s","freq":%d,"uid":"%s","flash":%d,"mem_free":%d,"mem_alloc":%d}' % (u.sysname, u.machine, u.release, u.version, freq, uid, flash, gc.mem_free(), gc.mem_alloc()))
+print(ujson.dumps({"sysname": u.sysname, "machine": u.machine, "release": u.release, "version": u.version, "freq": freq, "uid": uid, "flash": flash, "mem_free": gc.mem_free(), "mem_alloc": gc.mem_alloc()}))
 `;
 
 // uname.machine / sysname -> cip ailesi

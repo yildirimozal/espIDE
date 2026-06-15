@@ -1,6 +1,6 @@
 // sw.js — Service Worker: cevrimdisi destek + cache-busting.
 // GUNCELLEME YAYINLARKEN: APP_VERSION'i artir -> eski cache silinir, yeni varliklar cekilir.
-const APP_VERSION = 'v1.2.0';
+const APP_VERSION = 'v1.3.0';
 const CACHE = 'esp32ide-' + APP_VERSION;
 
 // Uygulama kabugu + bagimliliklar + firmware (cevrimdisi flashing icin)
@@ -40,6 +40,19 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // sadece kendi originimiz
+  // Surum-sabit, buyuk ve degismeyen firmware imajlari: cache-first, arka planda
+  // yeniden indirme YOK (her flash'ta ~1.7MB israfini onler). Surum degisirse
+  // APP_VERSION artirilir; activate eski cache'i silip yenisini ceker.
+  if (url.pathname.endsWith('.bin')) {
+    e.respondWith(
+      caches.open(CACHE).then((cache) =>
+        cache.match(e.request).then((cached) =>
+          cached || fetch(e.request).then((resp) => { if (resp && resp.ok) cache.put(e.request, resp.clone()); return resp; })
+        )
+      )
+    );
+    return;
+  }
   e.respondWith(
     caches.open(CACHE).then((cache) =>
       cache.match(e.request).then((cached) => {

@@ -44,9 +44,13 @@ export class DeviceFiles {
       row.className = 'node';
       row.dataset.path = full;
       row.dataset.type = it.type;
-      row.innerHTML = `<span class="ic">${iconFor(it.name, it.type)}</span>
-        <span class="nm">${it.name}</span>
-        <span class="sz">${it.type === 'file' ? fmtSize(it.size) : ''}</span>`;
+      // Cihazdan gelen dosya adi (it.name) innerHTML yerine textContent ile
+      // basiliyor -> DOM injection / agac bozulmasi engellenir. iconFor sabit
+      // emoji, boyut sayisaldir; ikisi de guvenli.
+      const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = iconFor(it.name, it.type);
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = it.name;
+      const sz = document.createElement('span'); sz.className = 'sz'; sz.textContent = it.type === 'file' ? fmtSize(it.size) : '';
+      row.append(ic, nm, sz);
       li.appendChild(row);
 
       row.addEventListener('click', async (e) => {
@@ -95,12 +99,12 @@ export async function pickLocalFolder() {
 }
 
 // Yereldeki tum dosyalari topla (alt klasorler dahil) -> [{path, handle}]
-async function walkLocal(dirHandle, prefix = '', acc = []) {
+async function walkLocal(dirHandle, prefix = '', acc = [], skipped = []) {
   for await (const [name, handle] of dirHandle.entries()) {
-    if (name.startsWith('.')) continue;
+    if (name.startsWith('.')) { skipped.push(prefix + '/' + name); continue; }
     const rel = prefix + '/' + name;
     if (handle.kind === 'file') acc.push({ path: rel, handle });
-    else if (handle.kind === 'directory') await walkLocal(handle, rel, acc);
+    else if (handle.kind === 'directory') await walkLocal(handle, rel, acc, skipped);
   }
   return acc;
 }
@@ -111,14 +115,21 @@ async function ensureDeviceDirs(repl, filePath) {
   let cur = '';
   for (const p of parts) {
     cur += '/' + p;
-    try { await repl.fsMkdir(cur); } catch (e) { /* zaten var */ }
+    try { await repl.fsMkdir(cur); }
+    catch (e) {
+      // "zaten var" (EEXIST) beklenen durum; digerlerini (ENOSPC, salt-okunur
+      // fs vb.) yukari ilet ki yazma sessizce yari kalmasin.
+      if (!/EEXIST|Errno 17/i.test(e.message || '')) throw e;
+    }
   }
 }
 
 // Yerel -> Cihaz
 export async function pushToDevice(repl, dirHandle, onLog = () => {}) {
-  const files = await walkLocal(dirHandle);
+  const skipped = [];
+  const files = await walkLocal(dirHandle, '', [], skipped);
   onLog(t('fs_count_push', { n: files.length }));
+  if (skipped.length) onLog(t('fs_skipped_dot', { n: skipped.length }));
   for (const f of files) {
     const file = await f.handle.getFile();
     const bytes = new Uint8Array(await file.arrayBuffer());

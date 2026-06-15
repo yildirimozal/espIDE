@@ -11,6 +11,8 @@ import { Wireless } from './wireless.js';
 import { t, applyI18n, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+// Cihazdan gelen string'leri innerHTML'e gomerken kacis (XSS korumasi).
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const repl = new SerialREPL();
 let cm, term, dfiles, plotter, wireless, currentChip = 'ESP32', lastInfo = null;
 let curFile = null, folderHandle = null;
@@ -24,8 +26,13 @@ const EXAMPLES = {
 };
 
 function out(text, cls = '') {
+  const o = $('output');
   const s = document.createElement('span'); if (cls) s.className = cls; s.textContent = text;
-  $('output').appendChild(s); $('output').scrollTop = $('output').scrollHeight;
+  o.appendChild(s);
+  // Sinirsiz DOM buyumesini engelle: en eski span'leri at.
+  const MAX = 4000;
+  while (o.childElementCount > MAX) o.removeChild(o.firstChild);
+  o.scrollTop = o.scrollHeight;
 }
 function statusConnected() { setStatus(t('st_connected', { chip: currentChip }), 'ok'); }
 function setStatus(text, st) { $('status-text').textContent = text; $('status-dot').className = 'dot ' + (st || ''); }
@@ -51,7 +58,7 @@ async function connect() {
   try {
     setStatus(t('st_selecting'), 'busy');
     await repl.requestPort();
-    repl.onDisconnect = () => { setConnectedUI(false); setStatus(t('st_dropped'), 'err'); out(t('msg_dropped'), 'err'); };
+    repl.onDisconnect = () => { if (wireless) wireless.stop(); setConnectedUI(false); setStatus(t('st_dropped'), 'err'); out(t('msg_dropped'), 'err'); };
     await repl.open(parseInt($('baud').value, 10));
     setConnectedUI(true);
     out(t('msg_connected'), 'sys');
@@ -74,13 +81,13 @@ async function disconnect() { if (wireless) wireless.stop(); await repl.close();
 function renderInfo(info) {
   if (!info) return;
   $('info').innerHTML = `
-    <div><b>${t('info_chip')}</b><span>${currentChip}</span></div>
-    <div><b>${t('info_model')}</b><span>${info.machine}</span></div>
-    <div><b>${t('info_mpy')}</b><span>${info.release}</span></div>
+    <div><b>${t('info_chip')}</b><span>${esc(currentChip)}</span></div>
+    <div><b>${t('info_model')}</b><span>${esc(info.machine)}</span></div>
+    <div><b>${t('info_mpy')}</b><span>${esc(info.release)}</span></div>
     <div><b>${t('info_freq')}</b><span>${(info.freq / 1e6) | 0} MHz</span></div>
     <div><b>${t('info_flash')}</b><span>${(info.flash / 1048576) | 0} MB</span></div>
     <div><b>${t('info_freeram')}</b><span>${(info.mem_free / 1024) | 0} KB</span></div>
-    <div><b>${t('info_uid')}</b><span>${info.uid}</span></div>`;
+    <div><b>${t('info_uid')}</b><span>${esc(info.uid)}</span></div>`;
 }
 async function refreshInfo() {
   const { stdout, stderr } = await repl.exec(INFO_SCRIPT, 8000);
@@ -100,11 +107,14 @@ async function refreshFiles() {
   await dfiles.refresh();
   try { const d = await repl.fsDf(); $('df').textContent = t('df_usage', { used: (d.used / 1024) | 0, total: (d.total / 1024) | 0 }); } catch (e) {}
 }
-async function openFile(path) {
+// Editorde kaydedilmemis degisiklik varsa kullaniciya sor (setValue oncesi).
+function confirmDiscard() { return !cm.isDirty() || confirm(t('confirm_discard')); }
+async function openFile(path, skipGuard = false) {
+  if (!skipGuard && !confirmDiscard()) return;
   setStatus(t('st_opening'), 'busy');
   try {
     const text = await repl.fsReadText(path);
-    cm.setValue(text); curFile = path; $('cur-file').textContent = path;
+    cm.setValue(text); cm.markSaved(); curFile = path; $('cur-file').textContent = path;
     statusConnected();
   } catch (e) { out(t('msg_open_fail', { e: e.message }), 'err'); setStatus(t('st_error'), 'err'); }
 }
@@ -114,6 +124,7 @@ async function saveToDevice() {
   setStatus(t('st_saving'), 'busy');
   try {
     await repl.fsWrite(path, cm.getValue());
+    cm.markSaved();
     curFile = path; $('cur-file').textContent = path;
     out(t('msg_saved', { path }), 'sys');
     await refreshFiles(); statusConnected();
@@ -121,7 +132,8 @@ async function saveToDevice() {
 }
 async function newFile() {
   const path = prompt(t('prompt_newfile'), '/new.py'); if (!path) return;
-  await repl.fsWrite(path, '# ' + path + '\n'); await refreshFiles(); openFile(path);
+  if (!confirmDiscard()) return;
+  await repl.fsWrite(path, '# ' + path + '\n'); await refreshFiles(); openFile(path, true);
 }
 async function delSelected() {
   if (!dfiles.selected) { out(t('msg_pick_file'), 'sys'); return; }
@@ -209,13 +221,13 @@ function init() {
   catch (e) { console.error('Terminal:', e); $('terminal').innerHTML = '<div class="err small" style="padding:8px">xterm.js?</div>'; }
   dfiles = new DeviceFiles($('tree'), repl, { openFile });
   plotter = new Plotter($('plot-canvas'), $('plot-legend'));
-  wireless = new Wireless(repl, { results: $('wl-results') });
+  wireless = new Wireless(repl, { results: $('wl-results'), auto: $('wl-auto') });
 
   applyI18n();
   $('lang').value = getLang();
   buildExamples();
 
-  $('examples').addEventListener('change', (e) => { if (EXAMPLES[e.target.value]) { cm.setValue(EXAMPLES[e.target.value]); e.target.value = ''; } });
+  $('examples').addEventListener('change', (e) => { if (EXAMPLES[e.target.value]) { if (confirmDiscard()) { cm.setValue(EXAMPLES[e.target.value]); cm.markSaved(); } e.target.value = ''; } });
   $('lang').addEventListener('change', (e) => changeLang(e.target.value));
 
   document.querySelectorAll('.tab[data-tab]').forEach((b) => b.addEventListener('click', () => {

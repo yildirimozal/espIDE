@@ -1,5 +1,5 @@
 // editor.js — CodeMirror tabanli kod editoru (Python renklendirme).
-// CodeMirror, index.html'de CDN'den global olarak yuklenir.
+// CodeMirror, index.html'de vendored (yerel) olarak global yuklenir — CDN yok.
 
 const VARSAYILAN = `# Welcome to ESP32 Web IDE!
 # Write code, press Ctrl+Enter to send & run it on the board.
@@ -38,5 +38,10 @@ export function initEditor(el, onRun) {
   });
   // Yazdikca tarayicida sakla (kaybolmasin)
   cm.on('change', () => localStorage.setItem('esp32ide_kod', cm.getValue()));
+  // Kirli-durum takibi (CodeMirror generation API): setValue ile kaydedilmemis
+  // degisiklik ezilmeden once app.js confirm sorabilsin diye.
+  let savedGen = cm.changeGeneration(true);
+  cm.markSaved = () => { savedGen = cm.changeGeneration(true); };
+  cm.isDirty = () => !cm.isClean(savedGen);
   return cm;
 }

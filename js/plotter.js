@@ -31,6 +31,8 @@ export class Plotter {
       this._line = this._line.slice(nl + 1);
       this._parse(line);
     }
+    // Newline gelmeyen asiri uzun veride (ikili/bozuk akis) tamponu sinirla.
+    if (this._line.length > 16384) this._line = this._line.slice(-4096);
   }
 
   _parse(line) {

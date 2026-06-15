@@ -12,13 +12,23 @@ export const FIRMWARE = {
   'ESP32-C3': { file: 'firmware/ESP32_GENERIC_C3-v1.28.0.bin', offset: 0x0,    ad: 'ESP32-C3' },
 };
 
+// Cip aciklamasini (esploader.main() insan-okunur string dondurur) bilinen bir
+// aileye eslestirir. Beyaz liste: eslesmeyen cip null doner ve !fw guard'i ile
+// reddedilir -> yanlis imaj asla yazilmaz. (Once 'ESP32' donduruluyordu; C2/H2/
+// P4/ESP8266 gibi ayirt edici token'i olmayan aileler klasik ESP32 imajini
+// yiyordu.)
 function normalizeChip(desc) {
   const d = (desc || '').toUpperCase();
+  if (d.includes('ESP8266') || d.includes('ESP8285')) return 'ESP8266';
   if (d.includes('S3')) return 'ESP32-S3';
-  if (d.includes('C3')) return 'ESP32-C3';
   if (d.includes('S2')) return 'ESP32-S2';
+  if (d.includes('C2')) return 'ESP32-C2';
+  if (d.includes('C3')) return 'ESP32-C3';
   if (d.includes('C6')) return 'ESP32-C6';
-  return 'ESP32';
+  if (d.includes('H2')) return 'ESP32-H2';
+  if (d.includes('P4')) return 'ESP32-P4';
+  if (d.includes('ESP32')) return 'ESP32'; // klasik ESP32 yalnizca pozitif eslesme
+  return null;                             // bilinmeyen -> reddedilir
 }
 
 async function fetchBinaryString(url) {
@@ -47,35 +57,40 @@ export async function flashFirmware(port, { onLog = () => {}, onProgress = () =>
   const transport = new Transport(port, false);
   const esploader = new ESPLoader({ transport, baudrate: 460800, terminal });
 
-  onLog('Karta baglaniliyor (bootloader)...\n');
-  const chipDesc = await esploader.main();          // cipe baglanir, aciklama dondurur
-  const chip = normalizeChip(chipDesc);
-  onLog('Tespit edilen cip: ' + chipDesc + ' -> ' + chip + '\n');
+  // try/finally: hata (USB kopmasi, brown-out, esptool timeout) olsa bile
+  // transport.disconnect() her yolda calisir -> port acik/kilitli kalmaz,
+  // REPL sayfa yenilemeden geri alabilir.
+  try {
+    onLog('Karta baglaniliyor (bootloader)...\n');
+    const chipDesc = await esploader.main();          // cipe baglanir, aciklama dondurur
+    const chip = normalizeChip(chipDesc);
+    onLog('Tespit edilen cip: ' + chipDesc + (chip ? ' -> ' + chip : ' (taninmadi)') + '\n');
 
-  const fw = FIRMWARE[chip];
-  if (!fw) {
+    const fw = chip && FIRMWARE[chip];
+    if (!fw) {
+      throw new Error('Bu cip icin pakette firmware yok: ' + (chip || chipDesc) +
+        '. firmware/ klasorune uygun .bin ekleyip flash.js icindeki FIRMWARE listesini guncelle.');
+    }
+
+    onLog('Firmware indiriliyor: ' + fw.file + '\n');
+    const data = await fetchBinaryString(fw.file);
+
+    onLog('Flash yaziliyor (0x' + fw.offset.toString(16) + ')... bu ~30 sn surebilir.\n');
+    await esploader.writeFlash({
+      fileArray: [{ data, address: fw.offset }],
+      flashSize: 'keep',
+      eraseAll: true,
+      compress: true,
+      reportProgress: (idx, written, total) => onProgress(written / total),
+    });
+
+    onLog('\nYazma tamam. Kart resetleniyor...\n');
     await safeReset(esploader, transport);
-    throw new Error('Bu cip icin pakette firmware yok: ' + chip +
-      '. firmware/ klasorune uygun .bin ekleyip flash.js icindeki FIRMWARE listesini guncelle.');
+    onProgress(1);
+    return { chip, chipDesc, firmware: fw };
+  } finally {
+    try { await transport.disconnect(); } catch (e) {}   // portu serbest birak (REPL alabilsin)
   }
-
-  onLog('Firmware indiriliyor: ' + fw.file + '\n');
-  const data = await fetchBinaryString(fw.file);
-
-  onLog('Flash yaziliyor (0x' + fw.offset.toString(16) + ')... bu ~30 sn surebilir.\n');
-  await esploader.writeFlash({
-    fileArray: [{ data, address: fw.offset }],
-    flashSize: 'keep',
-    eraseAll: true,
-    compress: true,
-    reportProgress: (idx, written, total) => onProgress(written / total),
-  });
-
-  onLog('\nYazma tamam. Kart resetleniyor...\n');
-  await safeReset(esploader, transport);
-  await transport.disconnect();           // portu serbest birak (REPL alabilsin)
-  onProgress(1);
-  return { chip, chipDesc, firmware: fw };
 }
 
 async function safeReset(esploader, transport) {
