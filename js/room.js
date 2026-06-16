@@ -111,7 +111,7 @@ export class Room {
     let dev = 0;
     if (this.baseline && this.hist.length) {
       const cur = this.hist[this.hist.length - 1], n = this.nsub; let d = 0;
-      for (let k = 0; k < n; k++) d += Math.abs((cur[k] || 0) - this.baseline[k]);
+      for (let k = 0; k < n; k++) d += Math.abs((cur[k] || 0) - (this.baseline[k] || 0));
       dev = (d / n) / this.baseScale;
     }
     if (this.calibrating) this.state = 'calibrating';
@@ -130,12 +130,12 @@ export class Room {
     let kBest = 0, vBest = -1;
     for (let k = 0; k < n; k++) {
       let s = 0, ss = 0;
-      for (let i = 0; i < N; i++) { const v = this.hist[i][k]; s += v; ss += v * v; }
+      for (let i = 0; i < N; i++) { const v = this.hist[i][k] || 0; s += v; ss += v * v; }
       const varr = ss / N - (s / N) ** 2; if (varr > vBest) { vBest = varr; kBest = k; }
     }
     const re = new Float64Array(N), im = new Float64Array(N);
-    let mean = 0; for (let i = 0; i < N; i++) mean += this.hist[i][kBest]; mean /= N;
-    for (let i = 0; i < N; i++) { const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)); re[i] = (this.hist[i][kBest] - mean) * w; }
+    let mean = 0; for (let i = 0; i < N; i++) mean += this.hist[i][kBest] || 0; mean /= N;
+    for (let i = 0; i < N; i++) { const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)); re[i] = ((this.hist[i][kBest] || 0) - mean) * w; }
     this.waveSig = re.slice(0, N);
     fft(re, im);
     const fs = 1000 / Math.max(1, (this.times[N - 1] - this.times[0]) / (N - 1)); // Hz
