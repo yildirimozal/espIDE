@@ -253,7 +253,8 @@ export class Room {
 
   clear() {
     this.hist = []; this.times = []; this.win = []; this.motionTL = []; this.count = 0;
-    this.motion = 0; this.max = 1; this.bpm = null; this.baseline = null; this.state = 'idle';
-    this._line = ''; this._t0 = null; this._rate = 0;
+    this.motion = 0; this.max = 1; this.bpm = null; this.bpmConf = 0; this.baseline = null; this.state = 'idle';
+    this.calibrating = 0; this._calibBuf = []; this.waveSig = null; this.nsub = 0;
+    this._line = ''; this._t0 = null; this._rate = 0; this._rc = 0; this._lastCalc = 0;
   }
 }

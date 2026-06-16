@@ -298,6 +298,7 @@ function init() {
   $('csi-flash').onclick = () => $('csi-file').click();
   $('csi-file').addEventListener('change', flashCsi);
   $('room-calib').onclick = () => room.startCalibration();
+  $('room-clear').onclick = () => room.clear();
   $('baud').addEventListener('change', async () => { if (repl.connected) { await repl.close(); await repl.open(parseInt($('baud').value, 10)); await repl.terminalReady(); } });
 
   drawBoard(BOARDS[0].id);
