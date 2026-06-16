@@ -11,7 +11,7 @@ const DICT = {
     pin_sim_hint: 'GPIO pinine tıkla → simülasyon (ileride gerçek pin durumuna bağlanacak).',
     run: 'Çalıştır', stop: 'Durdur', save_board: 'Karta kaydet', save_board_t: 'Editörü karta kaydet', examples: 'Örnekler…', clear_t: 'Çıktıyı/terminali temizle',
     tab_terminal: 'Terminal', tab_output: 'Çıktı', tab_plotter: 'Plotter',
-    plot_clear: '🧹 Temizle', plot_csv: '⭳ CSV indir',
+    plot_clear: '🧹 Temizle', plot_csv: '⭳ CSV indir', clear_btn: '🧹 Temizle',
     // durum
     st_disconnected: 'bağlı değil', st_selecting: 'port seçiliyor…', st_reading: 'kart okunuyor…',
     st_connected: 'bağlı · {chip}', st_running: 'çalışıyor…', st_error: 'hata', st_connfail: 'bağlanamadı',
@@ -64,7 +64,7 @@ const DICT = {
     pin_sim_hint: 'Click a GPIO pin → simulation (will reflect real pin state later).',
     run: 'Run', stop: 'Stop', save_board: 'Save to board', save_board_t: 'Save editor to board', examples: 'Examples…', clear_t: 'Clear output/terminal',
     tab_terminal: 'Terminal', tab_output: 'Output', tab_plotter: 'Plotter',
-    plot_clear: '🧹 Clear', plot_csv: '⭳ Download CSV',
+    plot_clear: '🧹 Clear', plot_csv: '⭳ Download CSV', clear_btn: '🧹 Clear',
     st_disconnected: 'not connected', st_selecting: 'selecting port…', st_reading: 'reading board…',
     st_connected: 'connected · {chip}', st_running: 'running…', st_error: 'error', st_connfail: 'connection failed',
     st_dropped: 'board disconnected', st_firmware: 'firmware…', st_opening: 'opening…', st_saving: 'saving…',
