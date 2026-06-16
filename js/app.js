@@ -80,8 +80,10 @@ async function connect() {
       statusConnected();
     } catch (probe) {
       // MicroPython yanıt vermedi (ör. CSI / C / ESP-IDF firmware) -> ham seri modunda kal.
-      // Terminal ve CSI gibi ham-akış araçları yine çalışır.
-      out('MicroPython yanıtı yok — ham seri modu (terminal / CSI çalışır).\n', 'sys');
+      // Terminal ve CSI/Oda gibi ham-akış araçları yine çalışır; REPL'e bağlı
+      // butonları (çalıştır/kaydet/dosya) kapat — bunlar bu modda hata verir.
+      ['btn-run', 'btn-save', 'f-refresh', 'f-new', 'f-del', 'f-run', 'f-open'].forEach((id) => $(id).disabled = true);
+      out('MicroPython yanıtı yok — ham seri modu (terminal / CSI / Oda çalışır).\n', 'sys');
       setStatus('ham seri', 'ok');
     }
   } catch (e) {
