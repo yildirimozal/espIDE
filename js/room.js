@@ -161,7 +161,12 @@ export class Room {
   }
 
   _loop() {
-    const tick = () => { this._draw(); this._raf = requestAnimationFrame(tick); };
+    const tick = () => {
+      // Yalnizca panel goruntulenirken ciz: sekme gizliyken (#room display:none)
+      // offsetParent null olur -> ~60fps bos canvas cizimi israfini onler.
+      if (this.roomC.offsetParent !== null) this._draw();
+      this._raf = requestAnimationFrame(tick);
+    };
     this._raf = requestAnimationFrame(tick);
   }
 
